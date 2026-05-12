@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>血栓弹力图解读系统 v1.2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --surface2: #f0f2f5;
+    --border: #e0e4ea;
+    --border-dark: #c8cdd6;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #9ca3af;
+    --accent: #1d4ed8;
+    --accent-bg: #eff6ff;
+    --accent-border: #bfdbfe;
+    --green: #047857;
+    --green-bg: #ecfdf5;
+    --green-border: #6ee7b7;
+    --yellow: #92400e;
+    --yellow-bg: #fffbeb;
+    --yellow-border: #fcd34d;
+    --red: #b91c1c;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --orange: #c2410c;
+    --orange-bg: #fff7ed;
+    --orange-border: #fed7aa;
+    --purple: #6d28d9;
+    --purple-bg: #f5f3ff;
+    --purple-border: #c4b5fd;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: #fff;
+    border-bottom: 2px solid var(--border);
+    padding: 16px 32px;
+    display: flex; align-items: center; gap: 14px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .header-icon {
+    width: 38px; height: 38px;
+    background: var(--accent-bg);
+    border: 1.5px solid var(--accent-border);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--text-primary); letter-spacing: 0.03em;
+  }
+  header p { font-size: 11px; color: var(--text-muted); margin-top: 1px; font-family: 'JetBrains Mono', monospace; }
+  .header-badge {
+    margin-left: auto;
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted); background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 11px; border-radius: 6px;
+    text-align: right; line-height: 1.5;
+  }
+  .version-tag {
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    background: var(--accent-bg); color: var(--accent);
+    border: 1px solid var(--accent-border);
+    padding: 2px 7px; border-radius: 4px;
+    align-self: flex-start; margin-top: 2px;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1100px; margin: 0 auto;
+    padding: 26px 22px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  }
+  @media (max-width: 760px) { .container { grid-template-columns: 1fr; padding: 12px; } }
+
+  /* ── Cards ── */
+  .card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .card-header {
+    padding: 13px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2);
+  }
+  .card-header-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .card-header h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px; font-weight: 600; color: var(--text-primary);
+  }
+  .card-body { padding: 18px; }
+
+  /* ── Mode switch ── */
+  .mode-switch {
+    grid-column: 1 / -1;
+    display: flex; gap: 0;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px;
+    width: fit-content; margin: 0 auto 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .mode-btn {
+    padding: 9px 30px; border: none; background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px; cursor: pointer;
+    border-radius: 7px; transition: all 0.18s; font-weight: 400;
+  }
+  .mode-btn.trauma-active {
+    background: #1d4ed8; color: #fff; font-weight: 500;
+    box-shadow: 0 2px 6px rgba(29,78,216,0.28);
+  }
+  .mode-btn.nontrauma-active {
+    background: #047857; color: #fff; font-weight: 500;
+    box-shadow: 0 2px 6px rgba(4,120,87,0.28);
+  }
+  .mode-btn:not(.trauma-active):not(.nontrauma-active):hover { background: var(--surface2); }
+
+  /* ── Inputs ── */
+  .param-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .param-row { display: grid; grid-template-columns: 1fr 40px; gap: 8px; align-items: end; }
+  .param-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .param-label strong { font-family: 'JetBrains Mono', monospace; color: var(--text-primary); font-size: 13px; font-weight: 600; }
+  .param-label span { color: var(--text-muted); font-size: 11px; }
+  .param-ref { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+  .input-wrap { position: relative; }
+  input[type="number"] {
+    width: 100%; background: #fff;
+    border: 1.5px solid var(--border-dark); border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; font-weight: 600;
+    padding: 8px 30px 8px 11px;
+    outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,78,216,0.1); }
+  .input-dot {
+    position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #d1d5db; transition: background 0.25s;
+  }
+  .dot-normal { background: var(--green); }
+  .dot-low    { background: var(--accent); }
+  .dot-high   { background: var(--red); }
+  .unit-tag { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; align-self: end; padding-bottom: 9px; white-space: nowrap; }
+
+  /* ── Buttons ── */
+  .btn-analyze {
+    width: 100%; padding: 13px; border: none; border-radius: 10px;
+    font-family: 'Noto Serif SC', serif; font-size: 15px; font-weight: 600;
+    letter-spacing: 0.08em; cursor: pointer; transition: all 0.18s;
+    margin-top: 6px; background: var(--accent); color: #fff;
+    box-shadow: 0 2px 8px rgba(29,78,216,0.3);
+  }
+  .btn-analyze:hover { background: #1e3a8a; box-shadow: 0 4px 14px rgba(29,78,216,0.4); }
+  .btn-analyze:active { transform: scale(0.99); }
+  .btn-clear {
+    width: 100%; padding: 8px; border: 1.5px solid var(--border-dark);
+    border-radius: 8px; font-family: 'Noto Sans SC', sans-serif; font-size: 12px;
+    cursor: pointer; transition: all 0.18s; background: transparent;
+    color: var(--text-muted); margin-top: 5px;
+  }
+  .btn-clear:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+  /* ── Results ── */
+  .result-panel { grid-column: 1 / -1; display: none; }
+  .result-panel.visible { display: block; }
+
+  .overall-banner {
+    border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 14px; border: 1.5px solid;
+  }
+  .overall-banner.normal  { background: var(--green-bg);  border-color: var(--green-border); }
+  .overall-banner.low     { background: var(--accent-bg); border-color: var(--accent-border); }
+  .overall-banner.high    { background: var(--red-bg);    border-color: var(--red-border); }
+  .overall-banner.fibrin  { background: var(--orange-bg); border-color: var(--orange-border); }
+  .overall-banner.mixed   { background: var(--yellow-bg); border-color: var(--yellow-border); }
+  .banner-icon { font-size: 24px; flex-shrink: 0; }
+  .banner-title { font-family: 'Noto Serif SC', serif; font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+  .banner-sub { font-size: 13px; color: var(--text-secondary); }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 600px) { .result-grid { grid-template-columns: 1fr; } }
+
+  .result-item {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px;
+    border-left: 4px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .result-item.normal { border-left-color: var(--green); }
+  .result-item.low    { border-left-color: var(--accent); }
+  .result-item.high   { border-left-color: var(--red); }
+
+  .ri-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 7px; }
+  .ri-name { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; }
+  .ri-name-cn { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .ri-value-block { text-align: right; }
+  .ri-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; line-height: 1; }
+  .ri-value.normal { color: var(--green); }
+  .ri-value.low    { color: var(--accent); }
+  .ri-value.high   { color: var(--red); }
+  .ri-unit { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .ri-ref { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; }
+  .ri-tag {
+    display: inline-block; padding: 2px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; margin-bottom: 7px; border: 1px solid;
+  }
+  .ri-tag.normal { background: var(--green-bg);  color: var(--green);  border-color: var(--green-border); }
+  .ri-tag.low    { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-border); }
+  .ri-tag.high   { background: var(--red-bg);    color: var(--red);    border-color: var(--red-border); }
+  .ri-interp { font-size: 12px; color: var(--text-secondary); line-height: 1.65; }
+
+  /* ── Treatment ── */
+  .treatment-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .treatment-header {
+    padding: 12px 18px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .treatment-header h3 { font-family: 'Noto Serif SC', serif; font-size: 13px; font-weight: 600; }
+  .treatment-body { padding: 14px 18px; }
+  .treatment-items { display: flex; flex-direction: column; gap: 9px; }
+  .treatment-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 11px 13px; border-radius: 9px; border: 1px solid;
+  }
+  .treatment-item.blood   { background: #fff5f5; border-color: #fecaca; }
+  .treatment-item.factor  { background: #eff6ff; border-color: #bfdbfe; }
+  .treatment-item.fibrin  { background: #fffbeb; border-color: #fcd34d; }
+  .treatment-item.fibrin2 { background: #f5f3ff; border-color: #ddd6fe; }
+  .treatment-item.anticoag{ background: #f0fdf4; border-color: #a7f3d0; }
+  .treatment-item.watch   { background: #fefce8; border-color: #fef08a; }
+  .treatment-pill {
+    flex-shrink: 0; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace; border: 1.5px solid;
+  }
+  .pill-blood   { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+  .pill-factor  { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+  .pill-fibrin  { background: #fef9c3; color: #78350f; border-color: #fde047; }
+  .pill-fibrin2 { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+  .pill-anticoag{ background: #d1fae5; color: #064e3b; border-color: #6ee7b7; }
+  .pill-watch   { background: #fef9c3; color: #78350f; border-color: #fde047; }
+  .treatment-text { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+  .treatment-text strong { color: var(--text-primary); font-weight: 600; }
+  .warn-box {
+    margin-top: 11px; padding: 10px 13px;
+    background: var(--yellow-bg); border: 1px solid var(--yellow-border);
+    border-radius: 7px; font-size: 11px; color: var(--text-secondary); line-height: 1.65;
+  }
+  .warn-box strong { color: var(--yellow); }
+
+  .normal-message { text-align: center; padding: 30px; color: var(--text-muted); font-size: 14px; }
+  .normal-message .big { font-size: 36px; margin-bottom: 10px; }
+  .normal-message strong { color: var(--green); font-size: 15px; display: block; margin-bottom: 6px; }
+
+  /* ── Quick ref table ── */
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ref-table th {
+    text-align: left; padding: 7px 10px;
+    color: var(--text-muted); font-weight: 500;
+    background: var(--surface2);
+    border-bottom: 1.5px solid var(--border); font-size: 11px;
+  }
+  .ref-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table tr:hover td { background: var(--surface2); }
+  .mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 600; font-size: 13px; }
+  .range { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-secondary); }
+  .mode-info {
+    margin-top: 14px; padding: 12px 14px;
+    border-radius: 9px; border: 1px solid;
+    font-size: 12px; color: var(--text-secondary); line-height: 1.65;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  /* ── Footer reference block ── */
+  .ref-footnote {
+    grid-column: 1 / -1; background: #fff;
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .ref-footnote-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .ref-footnote h4 {
+    font-size: 11px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .ref-section { margin-bottom: 12px; }
+  .ref-section:last-child { margin-bottom: 0; }
+  .ref-section-title {
+    font-size: 10px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ref-footnote ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .ref-footnote li {
+    font-size: 11px; color: var(--text-muted);
+    padding-left: 13px; position: relative; line-height: 1.5;
+  }
+  .ref-footnote li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .ref-footnote li.ref-range { color: var(--green); }
+  .ref-footnote li.ref-range::before { color: var(--green); }
+
+  .disclaimer {
+    grid-column: 1 / -1; font-size: 11px; color: var(--text-muted);
+    text-align: center; padding: 4px 16px 22px; line-height: 1.6;
+  }
+
+  .section-label {
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .ai { animation: fadeInUp 0.3s ease both; }
+  .ai:nth-child(1){animation-delay:.04s} .ai:nth-child(2){animation-delay:.08s}
+  .ai:nth-child(3){animation-delay:.12s} .ai:nth-child(4){animation-delay:.16s}
+  .ai:nth-child(5){animation-delay:.20s} .ai:nth-child(6){animation-delay:.24s}
+  .ai:nth-child(7){animation-delay:.28s}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🩸</div>
+  <div>
+    <h1>血栓弹力图解读系统</h1>
+    <p>TEG Interpretation Tool · Kaolin Activated · TEG 5000</p>
+  </div>
+  <div style="display:flex;align-items:flex-start;gap:8px;margin-left:auto;">
+    <div class="version-tag">v1.2</div>
+    <div class="header-badge">参考范围：院内ICU报告单<br>处理依据：EAST 2021 · ASH 2020</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Mode switch -->
+  <div class="mode-switch">
+    <button class="mode-btn trauma-active" onclick="setMode('trauma')" id="btn-trauma">🔴 创伤患者</button>
+    <button class="mode-btn" onclick="setMode('nontrauma')" id="btn-nontrauma">🟢 非创伤患者</button>
+  </div>
+
+  <!-- Input card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-dot"></div>
+      <h2>参数输入</h2>
+    </div>
+    <div class="card-body">
+      <div class="param-grid">
+
+        <div class="param-row">
+          <div>
+            <div class="param-label"><strong>R</strong><span>凝血因子活性</span></div>
+            <div class="param-ref">参考区间：5.0 – 10.0 min</div>
+            <div class="input-wrap">
+              <input type="number" id="inp-R" step="0.1" min="0" placeholder="输入数值" oninput="liveStatus('R')">
+              <div class="input-dot" id="dot-R"></div>
+            </div>
+          </div>
+          <div class="unit-tag">min</div>
+        </div>
+
+        <div class="param-row">
+          <div>
+            <div class="param-label"><strong>K</strong><span>纤维蛋白原水平</span></div>
+            <div class="param-ref">参考区间：1.0 – 3.0 min</div>
+            <div class="input-wrap">
+              <input type="number" id="inp-K" step="0.1" min="0" placeholder="输入数值" oninput="liveStatus('K')">
+              <div class="input-dot" id="dot-K"></div>
+            </div>
+          </div>
+          <div class="unit-tag">min</div>
+        </div>
+
+        <div class="param-row">
+          <div>
+            <div class="param-label"><strong>Angle (α)</strong><span>纤维蛋白原水平</span></div>
+            <div class="param-ref">参考区间：53.0 – 72.0 °</div>
+            <div class="input-wrap">
+              <input type="number" id="inp-A" step="0.1" min="0" max="90" placeholder="输入数值" oninput="liveStatus('A')">
+              <div class="input-dot" id="dot-A"></div>
+            </div>
+          </div>
+          <div class="unit-tag">deg</div>
+        </div>
+
+        <div class="param-row">
+          <div>
+            <div class="param-label"><strong>MA</strong><span>血小板功能</span></div>
+            <div class="param-ref">参考区间：50.0 – 70.0 mm</div>
+            <div class="input-wrap">
+              <input type="number" id="inp-MA" step="0.1" min="0" placeholder="输入数值" oninput="liveStatus('MA')">
+              <div class="input-dot" id="dot-MA"></div>
+            </div>
+          </div>
+          <div class="unit-tag">mm</div>
+        </div>
+
+        <div class="param-row">
+          <div>
+            <div class="param-label"><strong>CI</strong><span>凝血综合指标</span></div>
+            <div class="param-ref">参考区间：−3 – 3</div>
+            <div class="input-wrap">
+              <input type="number" id="inp-CI" step="0.1" placeholder="输入数值" oninput="liveStatus('CI')">
+              <div class="input-dot" id="dot-CI"></div>
+            </div>
+          </div>
+          <div class="unit-tag">&nbsp;</div>
+        </div>
+
+        <div class="param-row">
+          <div>
+            <div class="param-label"><strong>EPL</strong><span>预测纤维溶指标</span></div>
+            <div class="param-ref">参考区间：0 – 15 %</div>
+            <div class="input-wrap">
+              <input type="number" id="inp-EPL" step="0.1" min="0" max="100" placeholder="输入数值" oninput="liveStatus('EPL')">
+              <div class="input-dot" id="dot-EPL"></div>
+            </div>
+          </div>
+          <div class="unit-tag">%</div>
+        </div>
+
+        <div class="param-row">
+          <div>
+            <div class="param-label"><strong>LY30</strong><span>纤溶德指数</span></div>
+            <div class="param-ref">参考区间：0.0 – 7.5 %</div>
+            <div class="input-wrap">
+              <input type="number" id="inp-LY30" step="0.1" min="0" max="100" placeholder="输入数值" oninput="liveStatus('LY30')">
+              <div class="input-dot" id="dot-LY30"></div>
+            </div>
+          </div>
+          <div class="unit-tag">%</div>
+        </div>
+
+        <button class="btn-analyze" onclick="analyze()">▶ 开始解读</button>
+        <button class="btn-clear" onclick="clearAll()">↺ 清空重填</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick reference card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-dot" style="background:var(--yellow);"></div>
+      <h2>参数速查表</h2>
+    </div>
+    <div class="card-body">
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>参数</th><th>参考区间</th><th>偏低</th><th>偏高</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">R</td>
+            <td class="range">5.0–10.0 min</td>
+            <td style="color:var(--red);font-size:11px;">高凝，凝血因子↑</td>
+            <td style="color:var(--accent);font-size:11px;">低凝，凝血因子↓</td>
+          </tr>
+          <tr>
+            <td class="mono">K</td>
+            <td class="range">1.0–3.0 min</td>
+            <td style="color:var(--red);font-size:11px;">高凝，Fbg↑</td>
+            <td style="color:var(--accent);font-size:11px;">低凝，Fbg↓</td>
+          </tr>
+          <tr>
+            <td class="mono">α角</td>
+            <td class="range">53–72 °</td>
+            <td style="color:var(--accent);font-size:11px;">低凝，Fbg↓</td>
+            <td style="color:var(--red);font-size:11px;">高凝，Fbg↑</td>
+          </tr>
+          <tr>
+            <td class="mono">MA</td>
+            <td class="range">50–70 mm</td>
+            <td style="color:var(--accent);font-size:11px;">低凝，血小板↓</td>
+            <td style="color:var(--red);font-size:11px;">高凝，血小板↑</td>
+          </tr>
+          <tr>
+            <td class="mono">CI</td>
+            <td class="range">−3 – 3</td>
+            <td style="color:var(--accent);font-size:11px;">综合低凝</td>
+            <td style="color:var(--red);font-size:11px;">综合高凝</td>
+          </tr>
+          <tr>
+            <td class="mono">EPL</td>
+            <td class="range">0–15 %</td>
+            <td style="color:var(--text-muted);font-size:11px;">正常</td>
+            <td style="color:var(--orange);font-size:11px;">纤溶亢进预测</td>
+          </tr>
+          <tr>
+            <td class="mono">LY30</td>
+            <td class="range">0–7.5 %</td>
+            <td style="color:var(--text-muted);font-size:11px;">正常</td>
+            <td style="color:var(--orange);font-size:11px;">纤溶亢进</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="mode-info" id="mode-desc" style="border-color:var(--accent-border);background:var(--accent-bg);">
+        <strong style="color:var(--accent)">创伤模式</strong>：适用于创伤、多处损伤、失血性休克患者。处理建议参考 EAST 2021 指南及 CK-TEG 创伤阈值研究（Gonzalez et al., <em>J Trauma Acute Care Surg</em>, 2018）。
+      </div>
+    </div>
+  </div>
+
+  <!-- Results panel -->
+  <div class="result-panel" id="result-panel">
+    <div id="result-content"></div>
+  </div>
+
+  <!-- References footer -->
+  <div class="ref-footnote">
+    <div class="ref-footnote-header">
+      <h4>循证来源 &amp; 参考区间依据</h4>
+      <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);">版本 v1.2 · 2026-04</span>
+    </div>
+
+    <div class="ref-section">
+      <div class="ref-section-title">📋 参考区间来源</div>
+      <ul>
+        <li class="ref-range">本院重症医学科（ICU）血栓弹力图试验TEG检验报告单（Kaolin激活，TEG 5000）—— R: 5.0–10.0 min，K: 1.0–3.0 min，Angle: 53.0–72.0°，MA: 50.0–70.0 mm，CI: −3–3，EPL: 0–15%，LY30: 0.0–7.5%</li>
+      </ul>
+    </div>
+
+    <div class="ref-section">
+      <div class="ref-section-title">📚 临床处理建议依据</div>
+      <ul>
+        <li>Bugaev N, et al. Thromboelastography and rotational thromboelastometry in bleeding patients with coagulopathy: Practice management guideline from the <strong>Eastern Association for the Surgery of Trauma (EAST)</strong>. <em>J Trauma Acute Care Surg.</em> 2021;90(4):583–595.</li>
+        <li>Selby R. "TEG talk": expanding clinical roles for thromboelastography and rotational thromboelastometry. <em>Hematology, <strong>ASH</strong> Education Program.</em> 2020;2020(1):67–75.</li>
+        <li>Gonzalez E, et al. Citrated kaolin thrombelastography (TEG) thresholds for goal-directed therapy in injured patients receiving massive transfusion. <em>J Trauma Acute Care Surg.</em> 2018;85(4):734–740. [Two Level I Trauma Centers, n=825, ROC analysis]</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠ 本工具仅供临床参考，所有治疗决策须结合患者临床表现、其他检验结果及医师判断。TEG结果需在具体临床背景下综合解读，不能替代临床判断。
+  </div>
+
+</div>
+
+<script>
+const REF = {
+  R:   {low:5.0,  high:10.0, unit:'min'},
+  K:   {low:1.0,  high:3.0,  unit:'min'},
+  A:   {low:53.0, high:72.0, unit:'°'},
+  MA:  {low:50.0, high:70.0, unit:'mm'},
+  CI:  {low:-3.0, high:3.0,  unit:''},
+  EPL: {low:0.0,  high:15.0, unit:'%'},
+  LY30:{low:0.0,  high:7.5,  unit:'%'},
+};
+const META = {
+  R:'凝血因子活性', K:'纤维蛋白原水平', A:'纤维蛋白原水平',
+  MA:'血小板功能', CI:'凝血综合指标', EPL:'预测纤溶指标', LY30:'纤溶德指数'
+};
+// Display order matches ICU report card order
+const KEYS = ['R','K','A','MA','CI','EPL','LY30'];
+
+let mode = 'trauma';
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-trauma').className   = 'mode-btn' + (m==='trauma'    ? ' trauma-active'    : '');
+  document.getElementById('btn-nontrauma').className = 'mode-btn' + (m==='nontrauma' ? ' nontrauma-active' : '');
+  const d = document.getElementById('mode-desc');
+  if (m === 'trauma') {
+    d.style.borderColor = 'var(--accent-border)';
+    d.style.background  = 'var(--accent-bg)';
+    d.innerHTML = `<strong style="color:var(--accent)">创伤模式</strong>：适用于创伤、多处损伤、失血性休克患者。处理建议参考 EAST 2021 指南及 CK-TEG 创伤阈值研究（Gonzalez et al., <em>J Trauma Acute Care Surg</em>, 2018）。`;
+  } else {
+    d.style.borderColor = 'var(--green-border)';
+    d.style.background  = 'var(--green-bg)';
+    d.innerHTML = `<strong style="color:var(--green)">非创伤模式</strong>：适用于ICU危重症、围术期、肝病、脓毒症等患者。处理建议参考 EAST 2021 指南（外科手术及危重症患者）及 ASH Education Program 2020。`;
+  }
+  if (document.getElementById('result-panel').classList.contains('visible')) analyze();
+}
+
+function getStatus(k, v) {
+  return v < REF[k].low ? 'low' : v > REF[k].high ? 'high' : 'normal';
+}
+
+function liveStatus(k) {
+  const el  = document.getElementById('inp-' + k);
+  const dot = document.getElementById('dot-' + k);
+  const v   = parseFloat(el.value);
+  if (isNaN(v) || el.value === '') { dot.className = 'input-dot'; return; }
+  dot.className = 'input-dot dot-' + getStatus(k, v);
+}
+
+function getVal(k) {
+  const v = parseFloat(document.getElementById('inp-' + k).value);
+  return isNaN(v) ? null : v;
+}
+
+function clearAll() {
+  KEYS.forEach(k => {
+    document.getElementById('inp-' + k).value = '';
+    document.getElementById('dot-' + k).className = 'input-dot';
+  });
+  document.getElementById('result-panel').classList.remove('visible');
+  document.getElementById('result-content').innerHTML = '';
+}
+
+function interp(k, v, m) {
+  const s = getStatus(k, v);
+  let txt = '', tx = [];
+
+  if (k === 'R') {
+    if (s === 'low') {
+      txt = `R值 ${v} min，低于参考下限（5.0 min），提示凝血因子活性增高，处于高凝状态。`;
+      tx.push({t:'watch', p:'watch', c:'高凝状态：<strong>不建议输注凝血产品</strong>。关注血栓栓塞风险，可考虑预防性抗凝，结合临床综合判断。'});
+    } else if (s === 'high') {
+      txt = `R值 ${v} min，超出参考上限（10.0 min），提示凝血因子缺乏或抗凝药影响，凝血启动延迟，处于低凝状态。`;
+      tx.push({t:'factor', p:'factor', c: m==='trauma'
+        ? '建议输注 <strong>新鲜冰冻血浆（FFP）</strong> 补充凝血因子。创伤大量输血患者可同时考虑 <strong>凝血酶原复合物（PCC）</strong>。'
+        : '建议输注 <strong>新鲜冰冻血浆（FFP）</strong> 补充凝血因子。根据具体缺乏情况可考虑针对性因子替代。'});
+    } else {
+      txt = `R值 ${v} min，在参考范围内，凝血因子活性正常。`;
+    }
+  }
+  else if (k === 'K') {
+    if (s === 'low') {
+      txt = `K值 ${v} min，低于参考下限（1.0 min），提示纤维蛋白原功能增强，血凝块形成加速，高凝倾向。`;
+      tx.push({t:'watch', p:'watch', c:'高凝状态：<strong>不建议输注冷沉淀</strong>。关注血栓栓塞风险。'});
+    } else if (s === 'high') {
+      txt = `K值 ${v} min，超出参考上限（3.0 min），提示纤维蛋白原水平低下或功能减弱，血凝块形成延迟。`;
+      tx.push({t:'fibrin', p:'fibrin', c:'建议输注 <strong>冷沉淀（Cryoprecipitate）</strong> 补充纤维蛋白原及凝血因子 VIII/XIII。如有条件，可使用 <strong>纤维蛋白原浓缩物</strong>。'});
+    } else {
+      txt = `K值 ${v} min，在参考范围内，纤维蛋白原水平正常。`;
+    }
+  }
+  else if (k === 'A') {
+    if (s === 'low') {
+      txt = `α角 ${v}°，低于参考下限（53°），提示纤维蛋白原水平低下或功能减弱，血凝块形成速率减慢，低凝状态。`;
+      tx.push({t:'fibrin', p:'fibrin', c:'建议输注 <strong>冷沉淀</strong> 和/或 <strong>纤维蛋白原浓缩物</strong>。α角降低意义与K值延长相同，两者同时异常更提示纤维蛋白原严重缺乏。'});
+    } else if (s === 'high') {
+      txt = `α角 ${v}°，超出参考上限（72°），提示纤维蛋白原功能增强，血凝块形成加速，高凝倾向。`;
+      tx.push({t:'watch', p:'watch', c:'高凝状态：<strong>不建议输注冷沉淀</strong>。关注血栓栓塞风险。'});
+    } else {
+      txt = `α角 ${v}°，在参考范围内，纤维蛋白原水平正常。`;
+    }
+  }
+  else if (k === 'MA') {
+    if (s === 'low') {
+      txt = `MA值 ${v} mm，低于参考下限（50 mm），提示血小板数量减少或聚集功能低下（MA约80%由血小板决定），凝块强度不足。`;
+      tx.push({t:'blood', p:'blood', c:'建议输注 <strong>血小板</strong>。血小板功能异常（而非数量减少）者可考虑 <strong>去氨加压素（DDAVP）</strong>。输注后建议复查TEG评估疗效。'});
+    } else if (s === 'high') {
+      txt = `MA值 ${v} mm，超出参考上限（70 mm），提示血小板功能亢进或高凝状态，凝块强度增高。`;
+      tx.push({t:'watch', p:'watch', c:'高凝状态：<strong>不建议输注血小板</strong>。结合临床评估血栓形成风险，必要时可考虑抗血小板或抗凝治疗。'});
+    } else {
+      txt = `MA值 ${v} mm，在参考范围内，血小板功能正常。`;
+    }
+  }
+  else if (k === 'CI') {
+    if (s === 'low') {
+      txt = `CI值 ${v}，低于 −3，综合评估提示明显低凝状态，需结合R、K、α、MA各参数进行针对性处理。`;
+      tx.push({t:'factor', p:'factor', c:'CI &lt; −3 提示综合低凝，需<strong>逐一分析R、K、α、MA的具体异常</strong>，针对性补充 FFP、冷沉淀或血小板。优先处理R值异常（凝血因子缺乏）。'});
+    } else if (s === 'high') {
+      txt = `CI值 ${v}，高于 +3，综合评估提示明显高凝状态，血栓风险增高。`;
+      tx.push({t:'anticoag', p:'anticoag', c:'CI &gt; +3 提示综合高凝。<strong>不建议输注凝血产品</strong>。评估血栓栓塞风险，必要时启动预防性或治疗性抗凝，结合临床综合判断。'});
+    } else {
+      txt = `CI值 ${v}，在参考范围内，综合凝血状态正常。`;
+    }
+  }
+  else if (k === 'EPL') {
+    if (s === 'high') {
+      txt = `EPL ${v}%，超出参考上限（15%），为MA后纤溶活性的预测值，提示存在纤溶亢进倾向。`;
+      tx.push({t:'fibrin2', p:'fibrin2', c:'EPL升高提示纤溶亢进倾向，建议使用 <strong>氨甲环酸（TXA）</strong>，无需等待LY30确认。'});
+    } else {
+      txt = `EPL ${v}%，在参考范围内，暂无纤溶亢进征象。`;
+    }
+  }
+  else if (k === 'LY30') {
+    if (s === 'high') {
+      txt = `LY30 ${v}%，超出参考上限（7.5%），提示纤溶亢进，凝块在MA后30分钟内溶解加速。${v > 15 ? ' 数值 >15% 提示严重纤溶亢进。' : ''}`;
+      tx.push({t:'fibrin2', p:'fibrin2', c:'建议使用 <strong>氨甲环酸（TXA，Tranexamic Acid）</strong> 抗纤溶治疗。创伤患者建议尽早给药（伤后3小时内效果最佳，CRASH-2研究）。也可使用 <strong>氨基己酸（Aminocaproic Acid）</strong> 作为替代。'});
+    } else {
+      txt = `LY30 ${v}%，在参考范围内，无纤溶亢进证据。`;
+    }
+  }
+
+  return {s, txt, tx};
+}
+
+function analyze() {
+  const vals = {};
+  let hasAny = false;
+  for (const k of KEYS) {
+    const v = getVal(k);
+    if (v !== null) { vals[k] = v; hasAny = true; }
+  }
+  if (!hasAny) { alert('请至少输入一个参数值'); return; }
+
+  document.getElementById('result-panel').classList.add('visible');
+
+  const res = {};
+  const allT = [];
+  let hasH = false, hasL = false;
+
+  for (const k of KEYS) {
+    if (vals[k] == null) continue;
+    const r = interp(k, vals[k], mode);
+    res[k] = r;
+    if (r.s === 'high') hasH = true;
+    else if (r.s === 'low') hasL = true;
+    allT.push(...r.tx);
+  }
+
+  const abn = Object.values(res).filter(r => r.s !== 'normal').length;
+  const fibK = ['LY30','EPL'];
+  const onlyFib = hasH && !hasL && Object.entries(res).every(([k,v]) => v.s === 'normal' || fibK.includes(k));
+
+  let oc, bi, bt, bs;
+  if      (abn === 0)        { oc='normal'; bi='✅'; bt='凝血功能正常';    bs='所有输入参数均在参考范围内，暂无需针对性输血或药物干预。'; }
+  else if (onlyFib)          { oc='fibrin'; bi='🟠'; bt='纤溶亢进';        bs='凝块溶解速率异常增快，建议抗纤溶治疗。'; }
+  else if (hasH && !hasL)    { oc='high';   bi='🔴'; bt='高凝状态';        bs='凝血活性增强，注意血栓栓塞风险，不建议输注凝血产品。'; }
+  else if (hasL && !hasH)    { oc='low';    bi='🔵'; bt='低凝状态';        bs='凝血功能不足，存在出血风险，需根据具体参数针对性补充血制品。'; }
+  else                       { oc='mixed';  bi='⚠️'; bt='混合性凝血异常';  bs='多参数异常且方向不一致，请逐一分析各参数并结合临床综合判断。'; }
+
+  let h = `<div class="overall-banner ${oc} ai">
+    <div class="banner-icon">${bi}</div>
+    <div><div class="banner-title">${bt}</div><div class="banner-sub">${bs}</div></div>
+  </div>`;
+
+  h += `<div class="section-label">各参数解读</div><div class="result-grid">`;
+  for (const k of KEYS) {
+    if (!res[k]) continue;
+    const r   = res[k];
+    const ref = REF[k];
+    const tag = r.s === 'normal' ? '正常' : r.s === 'low' ? '偏低' : '偏高';
+    const dk  = k === 'A' ? 'α角' : k;
+    h += `<div class="result-item ${r.s} ai">
+      <div class="ri-header">
+        <div><div class="ri-name">${dk}</div><div class="ri-name-cn">${META[k]}</div></div>
+        <div class="ri-value-block">
+          <div class="ri-value ${r.s}">${vals[k]}</div>
+          <div class="ri-unit">${ref.unit}</div>
+        </div>
+      </div>
+      <div class="ri-ref">参考：${ref.low} – ${ref.high} ${ref.unit}</div>
+      <div class="ri-tag ${r.s}">${tag}</div>
+      <div class="ri-interp">${r.txt}</div>
+    </div>`;
+  }
+  h += `</div>`;
+
+  const pills = {blood:'PLT 血小板', factor:'FFP / PCC', fibrin:'Cryo / Fbg', fibrin2:'TXA 抗纤溶', anticoag:'抗凝监测', watch:'观察/监测'};
+
+  if (allT.length > 0) {
+    h += `<div class="section-label">临床处理建议</div>
+    <div class="treatment-card ai">
+      <div class="treatment-header">
+        <span style="font-size:15px">💊</span>
+        <h3>基于TEG的目标导向处理建议</h3>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${mode==='trauma' ? 'EAST 2021 · Gonzalez 2018' : 'EAST 2021 · ASH 2020'}</span>
+      </div>
+      <div class="treatment-body"><div class="treatment-items">`;
+    const seen = new Set();
+    for (const t of allT) {
+      if (seen.has(t.c)) continue;
+      seen.add(t.c);
+      h += `<div class="treatment-item ${t.t}">
+        <span class="treatment-pill pill-${t.p}">${pills[t.p]}</span>
+        <div class="treatment-text">${t.c}</div>
+      </div>`;
+    }
+    h += `</div>
+      <div class="warn-box">⚠ 上述建议基于TEG参数异常提示，<strong>治疗决策须结合患者出血/血栓临床表现、血常规、凝血常规及医师判断</strong>。不出血的患者不建议仅凭TEG异常输注血制品。建议治疗后复查TEG评估疗效。</div>
+      </div>
+    </div>`;
+  } else if (abn === 0) {
+    h += `<div class="normal-message ai">
+      <div class="big">🟢</div>
+      <strong>所有参数正常，无需针对性干预</strong>
+      <div>如患者仍有出血表现，建议排查手术性出血、血管损伤等外科原因，并复查TEG。</div>
+    </div>`;
+  }
+
+  document.getElementById('result-content').innerHTML = h;
+  document.getElementById('result-panel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+<div style="margin-top:24px;padding:12px 0 8px;text-align:center;font-size:11px;color:#888;border-top:1px solid #e0e0e0;">Designed by 葱头爸爸 · liamphoenixwayne@outlook.com</div>
+</body>
+</html>
