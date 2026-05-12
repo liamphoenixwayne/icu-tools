@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICU患者拔管前评估流程 v1.2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #f4f6fa;
+    --white: #ffffff;
+    --text: #1a1e2e;
+    --text-dim: #4a5270;
+    --text-muted: #8a92aa;
+    --border: #d8dce8;
+
+    --c1: #2563eb; --c1-light: #eff4ff; --c1-mid: #bfcffe; --c1-border: #93aafd;
+    --c2: #7c3aed; --c2-light: #f5f0ff; --c2-mid: #d4bbfd; --c2-border: #b794fd;
+    --c3: #db2777; --c3-light: #fff0f7; --c3-mid: #fbbbda; --c3-border: #f472b6;
+    --c4: #0d9488; --c4-light: #f0fdfc; --c4-mid: #99f0e8; --c4-border: #2dd4bf;
+
+    --pass: #16a34a; --pass-light: #f0fdf4; --pass-border: #86efac;
+    --fail: #dc2626; --fail-light: #fff5f5; --fail-border: #fca5a5;
+    --warn: #d97706; --warn-light: #fffbeb; --warn-border: #fcd34d;
+
+    --radius: 8px; --radius-lg: 12px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 36px 28px;
+    min-width: 900px;
+  }
+
+  .header { text-align: center; margin-bottom: 36px; position: relative; }
+  .version-badge {
+    position: absolute; top: 0; right: 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text-muted); background: var(--white);
+    border: 1px solid var(--border); padding: 3px 12px;
+    border-radius: 20px; box-shadow: var(--shadow-sm);
+  }
+  .header h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: 0.03em; }
+  .header .subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 12px; }
+  .sources { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .source-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    padding: 2px 10px; border-radius: 20px;
+    border: 1px solid var(--border); color: var(--text-dim);
+    background: var(--white); box-shadow: var(--shadow-sm);
+  }
+
+  .flow { display: flex; flex-direction: column; align-items: center; max-width: 880px; margin: 0 auto; gap: 0; }
+
+  .arrow { display: flex; flex-direction: column; align-items: center; margin: 2px 0; }
+  .arrow-line { width: 2px; height: 20px; background: var(--border); }
+  .arrow-head { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid var(--border); }
+  .arrow-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--pass); background: var(--pass-light); border: 1px solid var(--pass-border);
+    padding: 1px 10px; border-radius: 20px; margin-bottom: 3px;
+  }
+
+  .gate { width: 100%; background: var(--white); border-radius: var(--radius-lg); border: 2px solid; box-shadow: var(--shadow); overflow: hidden; }
+  .gate-header { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid; }
+  .gate-num {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
+  }
+  .gate-title { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+  .gate-src { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-muted); white-space: nowrap; }
+  .gate-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .gate-1 { border-color: var(--c1-border); }
+  .gate-1 .gate-header { background: var(--c1-light); border-color: var(--c1-mid); }
+  .gate-1 .gate-num { background: var(--c1); }
+  .gate-1 .gate-title { color: var(--c1); }
+
+  .gate-2 { border-color: var(--c2-border); }
+  .gate-2 .gate-header { background: var(--c2-light); border-color: var(--c2-mid); }
+  .gate-2 .gate-num { background: var(--c2); }
+  .gate-2 .gate-title { color: var(--c2); }
+
+  .gate-3 { border-color: var(--c3-border); }
+  .gate-3 .gate-header { background: var(--c3-light); border-color: var(--c3-mid); }
+  .gate-3 .gate-num { background: var(--c3); }
+  .gate-3 .gate-title { color: var(--c3); }
+
+  .gate-4 { border-color: var(--c4-border); }
+  .gate-4 .gate-header { background: var(--c4-light); border-color: var(--c4-mid); }
+  .gate-4 .gate-num { background: var(--c4); }
+  .gate-4 .gate-title { color: var(--c4); }
+
+  .block { background: #fafbfd; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 13px; }
+  .block-title { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .criteria-list { display: flex; flex-direction: column; gap: 5px; }
+  .crit { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.5; color: var(--text); }
+  .crit-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .dot-c1 { background: var(--c1); } .dot-c2 { background: var(--c2); }
+  .dot-c3 { background: var(--c3); } .dot-c4 { background: var(--c4); }
+  .dot-pass { background: var(--pass); } .dot-fail { background: var(--fail); }
+  .dot-warn { background: var(--warn); } .dot-dim { background: var(--text-muted); }
+
+  .tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 6px; border-radius: 3px; vertical-align: middle; margin-left: 4px; }
+  .tag-blue { background: var(--c1-light); color: var(--c1); border: 1px solid var(--c1-border); }
+  .tag-dim  { background: #f0f2f7; color: var(--text-dim); border: 1px solid var(--border); }
+
+  .val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--c1); font-weight: 600; }
+
+  .note { font-size: 11px; color: var(--warn); padding: 5px 10px; background: var(--warn-light); border-left: 3px solid var(--warn); border-radius: 0 4px 4px 0; margin-top: 6px; line-height: 1.5; }
+  .note-info { font-size: 11px; color: var(--text-dim); padding: 5px 10px; background: #f0f4ff; border-left: 3px solid var(--c1-border); border-radius: 0 4px 4px 0; margin-top: 6px; }
+  .note-concept { font-size: 11px; color: #7c2d12; padding: 7px 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius); margin-bottom: 9px; line-height: 1.7; }
+
+  .fail-exit { display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: var(--radius); border: 1px solid var(--fail-border); background: var(--fail-light); font-size: 12px; color: var(--fail); }
+  .fail-icon { font-size: 14px; flex-shrink: 0; }
+
+  .sub-block { border-radius: var(--radius); border: 1px solid; overflow: hidden; }
+  .sub-header { display: flex; align-items: center; gap: 8px; padding: 8px 13px; font-size: 12px; font-weight: 700; border-bottom: 1px solid; }
+  .step-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 7px; border-radius: 3px; color: #fff; }
+  .sub-body { padding: 12px 13px; background: var(--white); }
+
+  .sub-sat { border-color: var(--c2-border); }
+  .sub-sat .sub-header { background: var(--c2-light); border-color: var(--c2-mid); color: var(--c2); }
+  .sub-sat .step-badge { background: var(--c2); }
+  .sub-sbt { border-color: var(--c2-border); }
+  .sub-sbt .sub-header { background: var(--c2-light); border-color: var(--c2-mid); color: var(--c2); }
+  .sub-sbt .step-badge { background: var(--c2); }
+
+  .sbt-pass { background: var(--pass-light); border: 1px solid var(--pass-border); border-radius: var(--radius); padding: 10px 12px; }
+  .sbt-pass .block-title { color: var(--pass); }
+  .sbt-fail { background: var(--fail-light); border: 1px solid var(--fail-border); border-radius: var(--radius); padding: 10px 12px; }
+  .sbt-fail .block-title { color: var(--fail); }
+
+  .sub-clt { border-color: var(--warn-border); }
+  .sub-clt .sub-header { background: var(--warn-light); border-color: var(--warn-border); color: var(--warn); }
+
+  .divider { width: 100%; height: 1px; background: var(--border); margin: 8px 0; }
+
+  .post-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .post-card { border-radius: var(--radius); border: 1px solid; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .post-card-header { padding: 8px 12px; font-size: 12px; font-weight: 700; border-bottom: 1px solid; }
+  .post-card-body { padding: 10px 12px; background: var(--white); font-size: 12px; }
+  .post-high { border-color: var(--fail-border); }
+  .post-high .post-card-header { background: var(--fail-light); color: var(--fail); border-color: var(--fail-border); }
+  .post-mid { border-color: var(--warn-border); }
+  .post-mid .post-card-header { background: var(--warn-light); color: var(--warn); border-color: var(--warn-border); }
+  .post-low { border-color: var(--border); }
+  .post-low .post-card-header { background: #f4f6fa; color: var(--text-dim); border-color: var(--border); }
+
+  .endpoint { width: 100%; text-align: center; padding: 18px; border-radius: var(--radius-lg); border: 2px solid var(--pass-border); background: var(--pass-light); box-shadow: var(--shadow); }
+  .endpoint-title { font-size: 18px; font-weight: 700; color: var(--pass); letter-spacing: 0.05em; margin-bottom: 4px; }
+  .endpoint-sub { font-size: 11px; color: var(--text-dim); }
+
+  .def-block { background: #f8f9fc; border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 13px; font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+
+  /* 版本变更栏 */
+  .changelog { margin-top: 28px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 18px; max-width: 880px; margin-left: auto; margin-right: auto; box-shadow: var(--shadow-sm); }
+  .changelog-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.08em; margin-bottom: 10px; }
+  .changelog-rows { display: flex; flex-direction: column; gap: 7px; }
+  .cl-row { display: grid; grid-template-columns: 140px 1fr; gap: 12px; font-size: 11px; align-items: start; }
+  .cl-loc { color: var(--text-muted); font-size: 10px; padding-top: 2px; }
+  .cl-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 6px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+  .cl-fix     { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+  .cl-add     { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+  .cl-concept { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+  .cl-desc { color: var(--text-dim); line-height: 1.6; }
+
+  .footer { margin-top: 20px; text-align: center; font-size: 10px; color: var(--text-muted); line-height: 1.9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="version-badge">v1.2</div>
+  <h1>ICU 患者拔管前评估流程</h1>
+  <div class="subtitle">PRE-EXTUBATION ASSESSMENT PROTOCOL · CRITICAL CARE</div>
+  <div class="sources">
+    <span class="source-tag">2017 ATS/ACCP</span>
+    <span class="source-tag">2024 AARC</span>
+    <span class="source-tag">2018/2025 SCCM PADIS</span>
+    <span class="source-tag">2022 ERS HFNC</span>
+  </div>
+</div>
+
+<div class="flow">
+
+<!-- ══ 第一关 ══ -->
+<div class="gate gate-1">
+  <div class="gate-header">
+    <div class="gate-num">1</div>
+    <div class="gate-title">撤机准备度筛查</div>
+    <div class="gate-src">ATS/ACCP 2017 · SCCM PADIS</div>
+  </div>
+  <div class="gate-body">
+    <div class="grid-2">
+      <div class="block">
+        <div class="block-title">呼吸 · 氧合</div>
+        <div class="criteria-list">
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>FiO₂ <span class="val">≤ 0.4</span>，PEEP <span class="val">≤ 5~8 cmH₂O</span></span></div>
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>SpO₂ <span class="val">≥ 90%</span>（或 PaO₂ <span class="val">> 60 mmHg</span>）</span></div>
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>pH <span class="val">≥ 7.35</span>（以pH为准，不以PaCO₂绝对值为准）</span></div>
+        </div>
+        <div class="note">⚠ COPD患者允许慢性代偿性高碳酸血症，pH达标即可通过</div>
+      </div>
+      <div class="block">
+        <div class="block-title">血流动力学</div>
+        <div class="criteria-list">
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>去甲肾上腺素 <span class="val">≤ 0.1 µg/kg/min</span>，或无需血管活性药</span></div>
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>无需持续静脉抗心律失常药</span></div>
+        </div>
+      </div>
+      <div class="block">
+        <div class="block-title">镇静 · 神经肌肉</div>
+        <div class="criteria-list">
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>RASS <span class="val">≥ −1</span>（或已完成SAT）</span></div>
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>无持续神经肌肉阻滞剂（NMBAs）</span></div>
+        </div>
+      </div>
+      <div class="block">
+        <div class="block-title">基础病因</div>
+        <div class="criteria-list">
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>导致插管的原发病因已好转或控制</span></div>
+          <div class="crit"><div class="crit-dot dot-c1"></div><span>近期无计划手术或紧急操作</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="fail-exit">
+      <span class="fail-icon">✕</span>
+      <span><strong>任一不满足</strong> → 继续机械通气，解除可逆因素，明日重新筛查</span>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="arrow-label">全部通过 ✓</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+<!-- ══ 第二关 ══ -->
+<div class="gate gate-2">
+  <div class="gate-header">
+    <div class="gate-num">2</div>
+    <div class="gate-title">自主觉醒试验（SAT）＋ 自主呼吸试验（SBT）</div>
+    <div class="gate-src">ATS/ACCP 2017 · AARC 2024 · SCCM PADIS</div>
+  </div>
+  <div class="gate-body">
+    <div class="sub-block sub-sat">
+      <div class="sub-header"><span class="step-badge">STEP A</span>自主觉醒试验 SAT &nbsp;—&nbsp; SBT前必须完成</div>
+      <div class="sub-body">
+        <div class="grid-2">
+          <div>
+            <div class="block-title">SAT 安全筛查（存在任一则维持镇静，不做SAT）</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>活动性癫痫或酒精戒断</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>持续使用NMBAs</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>颅内压升高</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>近24h因治疗需要使用大剂量镇静（如ARDS俯卧位）</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="block-title">SAT 操作</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-c2"></div><span>暂停或减停镇静药</span></div>
+              <div class="crit"><div class="crit-dot dot-c2"></div><span>目标：RASS 达到 <span class="val">−1 ~ 0</span></span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="block-title">SAT 失败标准（出现任一 → 恢复镇静，终止当日SBT）</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>RASS <span class="val">> +2</span>（明显烦躁）</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>疼痛加剧 / 新发心律失常</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>RR <span class="val">> 35</span> 或 SpO₂ <span class="val">< 90%</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block sub-sbt">
+      <div class="sub-header"><span class="step-badge">STEP B</span>自主呼吸试验 SBT &nbsp;—&nbsp; SAT通过后执行，建议中午前完成</div>
+      <div class="sub-body">
+        <div class="grid-3">
+          <div class="block">
+            <div class="block-title">SBT 方式（二选一）</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-c2"></div><span><strong>PSV法：</strong>PS <span class="val">5~8 cmH₂O</span> + PEEP <span class="val">5 cmH₂O</span></span></div>
+              <div class="crit"><div class="crit-dot dot-c2"></div><span><strong>T管法：</strong>断开呼吸机</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-dim"></div><span>时长：<span class="val">30~120 分钟</span></span></div>
+              <div class="crit"><div class="crit-dot dot-warn"></div><span><strong>禁止在SBT期间上调FiO₂</strong></span></div>
+            </div>
+            <div class="note-info">RSBI ≤ 105 可辅助参考，不作为必须门槛（AARC 2024）</div>
+          </div>
+          <div class="sbt-pass">
+            <div class="block-title">✓ SBT 通过（全部满足）</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-pass"></div><span>RR <span class="val">8~35</span> 次/分</span></div>
+              <div class="crit"><div class="crit-dot dot-pass"></div><span>SpO₂ <span class="val">≥ 90%</span></span></div>
+              <div class="crit"><div class="crit-dot dot-pass"></div><span>HR及BP波动 <span class="val">< 20%</span> 基线</span></div>
+              <div class="crit"><div class="crit-dot dot-pass"></div><span>无辅助肌动用 / 无矛盾呼吸</span></div>
+              <div class="crit"><div class="crit-dot dot-pass"></div><span>无明显烦躁、大汗、意识改变</span></div>
+            </div>
+          </div>
+          <div class="sbt-fail">
+            <div class="block-title">✕ SBT 失败（出现任一→立即终止）</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>RR <span class="val">> 35</span> 持续 <span class="val">> 5 min</span></span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>SpO₂ <span class="val">< 90%</span></span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>HR或BP变化 <span class="val">> 20%</span> 基线</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>辅助肌明显动用 / 矛盾呼吸</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>明显烦躁或意识恶化</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="fail-exit" style="margin-top:10px">
+          <span class="fail-icon">✕</span>
+          <span><strong>SBT失败</strong> → 恢复原参数通气，明日重新评估</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="arrow-label">SBT 通过 ✓</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+<!-- ══ 第三关 ══ -->
+<div class="gate gate-3">
+  <div class="gate-header">
+    <div class="gate-num">3</div>
+    <div class="gate-title">拔管能力评估</div>
+    <div class="gate-src">ATS/ACCP 2017</div>
+  </div>
+  <div class="gate-body">
+    <div class="grid-3">
+      <div class="block">
+        <div class="block-title">意识状态</div>
+        <div class="criteria-list">
+          <div class="crit"><div class="crit-dot dot-c3"></div>
+            <span>可唤醒，能遵嘱完成 <span class="val">≥ 1~2</span> 个简单指令（如"张嘴""举手"）<span class="tag tag-blue">指南推荐</span></span>
+          </div>
+          <div class="crit"><div class="crit-dot dot-dim"></div>
+            <span>GCS <span class="val">> 8</span> 可作为客观参考阈值<span class="tag tag-dim">临床共识</span></span>
+          </div>
+        </div>
+        <div class="note">⚠ 脑损伤/神经科患者GCS可能偏低仍可成功拔管，需结合咳嗽反射及专科意见，不应单以GCS拒绝拔管</div>
+      </div>
+
+      <div class="block">
+        <div class="block-title">气道保护能力</div>
+        <div class="criteria-list">
+          <div class="crit"><div class="crit-dot dot-c3"></div><span>咳嗽峰流速 <span class="val">> 60 L/min</span>，或主观判断咳嗽有效</span></div>
+          <div class="crit"><div class="crit-dot dot-c3"></div><span>吸痰频率 <span class="val">≤ 2次/2h</span>（分泌物量可管理）</span></div>
+        </div>
+      </div>
+
+      <!-- v1.1 核心修正：CLT高危概念明确 + 风险因素完整列出 -->
+      <div class="block" style="border-color: var(--warn-border);">
+        <div class="block-title" style="color: var(--warn);">拔管后喘鸣高危筛查</div>
+        <div class="note-concept">
+          <strong>⚡ 概念说明</strong><br>
+          此处"高危"= <strong>喉头/声门下水肿</strong>易感因素，与拔管后<strong>呼吸衰竭</strong>高风险（第四关）为两个完全独立的概念，评估目的和干预手段均不同，不可混淆。
+        </div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">满足任一 → 执行CLT（来源：ATS 2017原文）</div>
+        <div class="criteria-list">
+          <div class="crit"><div class="crit-dot dot-warn"></div><span>外伤性插管（traumatic intubation）</span></div>
+          <div class="crit"><div class="crit-dot dot-warn"></div><span>通气时间 <span class="val">> 6天</span></span></div>
+          <div class="crit"><div class="crit-dot dot-warn"></div><span>导管型号偏大（相对患者气管偏大）</span></div>
+          <div class="crit"><div class="crit-dot dot-warn"></div><span>女性</span></div>
+          <div class="crit"><div class="crit-dot dot-warn"></div><span>意外拔管后再次插管史</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block sub-clt">
+      <div class="sub-header">
+        ⚠ 气囊漏气试验（CLT）· 仅"拔管后喘鸣高危"患者执行 · 针对上气道喉头水肿风险
+      </div>
+      <div class="sub-body">
+        <div class="grid-2">
+          <div>
+            <div class="block-title">CLT 判定标准</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-pass"></div>
+                <span>漏气量 <span class="val">≥ 110 mL</span> 或 <span class="val">≥ 10%</span> 潮气量 → <strong>CLT阴性（通过）</strong> → 继续拔管评估</span>
+              </div>
+              <div class="crit"><div class="crit-dot dot-fail"></div>
+                <span>漏气量 <span class="val">< 110 mL</span> 或 <span class="val">< 10%</span> 潮气量 → <strong>CLT阳性（失败）</strong> → 激素处理后拔管</span>
+              </div>
+            </div>
+          </div>
+          <div style="border-left: 1px solid var(--warn-border); padding-left: 14px;">
+            <div class="block-title">CLT 阳性处理方案</div>
+            <div class="criteria-list">
+              <div class="crit"><div class="crit-dot dot-warn"></div><span><strong>甲强龙 40 mg IV 单次</strong>，拔管前 <span class="val">4~6小时</span> 给予</span></div>
+              <div class="crit"><div class="crit-dot dot-warn"></div><span>给药后<strong>无需复查CLT</strong>，按计划拔管</span></div>
+              <div class="crit"><div class="crit-dot dot-fail"></div><span>糖尿病患者：监测给药后24~72h血糖</span></div>
+            </div>
+            <div class="note-info">来源：2017 ATS Q6b 条件性推荐</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fail-exit">
+      <span class="fail-icon">✕</span>
+      <span><strong>拔管能力不满足</strong>（意识差、咳嗽无力、分泌物过多）→ 暂缓拔管，评估气管切开指征</span>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="arrow-label">通过 ✓</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+<!-- ══ 第四关 ══ -->
+<div class="gate gate-4">
+  <div class="gate-header">
+    <div class="gate-num">4</div>
+    <div class="gate-title">拔管后支持策略预判（拔管前制定）</div>
+    <div class="gate-src">ERS HFNC 2022 · ATS/ACCP 2017</div>
+  </div>
+  <div class="gate-body">
+    <div class="post-grid">
+      <div class="post-card post-high">
+        <div class="post-card-header">🔴 拔管后呼吸衰竭高风险 → 预防性 NIV</div>
+        <div class="post-card-body">
+          <div class="block-title" style="margin-bottom:6px">针对呼吸泵衰竭风险，满足任一：</div>
+          <div class="criteria-list">
+            <div class="crit"><div class="crit-dot dot-fail"></div><span>年龄 <span class="val">> 65岁</span></span></div>
+            <div class="crit"><div class="crit-dot dot-fail"></div><span>拔管当天 APACHE II <span class="val">> 12</span></span></div>
+            <div class="crit"><div class="crit-dot dot-fail"></div><span>因心衰插管</span></div>
+            <div class="crit"><div class="crit-dot dot-fail"></div><span>中重度COPD</span></div>
+            <div class="crit"><div class="crit-dot dot-fail"></div><span>SBT期间PaCO₂较基线新增升高 <span class="val">> 10 mmHg</span> 或 pH <span class="val">< 7.35</span></span></div>
+            <div class="crit"><div class="crit-dot dot-fail"></div><span>合并 <span class="val">≥ 2</span> 个慢性心肺合并症</span></div>
+          </div>
+          <div class="note" style="border-color:var(--fail-border);color:var(--fail);background:var(--fail-light);margin-top:8px">
+            NIV有禁忌时改用HFNC<br>
+            ⚠ COPD慢性基线高碳酸血症不计入高碳酸标准
+          </div>
+        </div>
+      </div>
+      <div class="post-card post-mid">
+        <div class="post-card-header">🟡 低中风险 → 预防性 HFNC</div>
+        <div class="post-card-body">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">存在部分风险因素，但不符合高风险标准</div>
+          <div class="criteria-list">
+            <div class="crit"><div class="crit-dot dot-warn"></div><span>HFNC 优于普通氧疗</span></div>
+            <div class="crit"><div class="crit-dot dot-warn"></div><span>可降低再插管率及向NIV升级需求</span></div>
+          </div>
+          <div class="note" style="margin-top:8px">ERS HFNC 2022 条件性推荐</div>
+        </div>
+      </div>
+      <div class="post-card post-low">
+        <div class="post-card-header">⚪ 无风险因素 → 普通氧疗</div>
+        <div class="post-card-body">
+          <div class="criteria-list">
+            <div class="crit"><div class="crit-dot dot-dim"></div><span>鼻导管或面罩给氧</span></div>
+            <div class="crit"><div class="crit-dot dot-dim"></div><span>不常规使用HFNC或NIV</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="def-block">
+      <span style="color:var(--text-muted);font-size:11px;flex-shrink:0">📌 拔管失败定义：</span>
+      <span>拔管后 <span class="val">48~72小时</span> 内需要重新插管 = 拔管失败（用于记录与质控）</span>
+    </div>
+  </div>
+</div>
+
+<div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+<div class="endpoint">
+  <div class="endpoint-title">✓ 执行拔管</div>
+  <div class="endpoint-sub">四关全部通过，拔管后支持方案已确定，按计划执行</div>
+</div>
+
+</div>
+
+<!-- 版本变更记录 -->
+<div class="changelog">
+  <div class="changelog-title">CHANGELOG · v1.0 → v1.1</div>
+  <div class="changelog-rows">
+    <div class="cl-row">
+      <div class="cl-loc">第三关 · CLT高危概念</div>
+      <div class="cl-desc"><span class="cl-tag cl-concept">概念澄清</span>明确将"拔管后喘鸣高危"（喉头水肿）与第四关"拔管后呼吸衰竭高风险"（呼吸泵衰竭）定义为两个独立概念，标题、正文及CLT子块标题均已区分，并在高危筛查框中添加概念说明</div>
+    </div>
+    <div class="cl-row">
+      <div class="cl-loc">第三关 · CLT高危因素</div>
+      <div class="cl-desc"><span class="cl-tag cl-fix">补入</span>补入ATS 2017原文中此前遗漏的风险因素：<strong>外伤性插管（traumatic intubation）</strong></div>
+    </div>
+    <div class="cl-row">
+      <div class="cl-loc">第三关 · CLT高危因素</div>
+      <div class="cl-desc"><span class="cl-tag cl-fix">修正</span>删除非ATS原文条目"经口插管"；将"既往拔管后喘鸣史"修正为ATS 2017原文准确表述：<strong>意外拔管后再次插管史（reintubated after unplanned extubation）</strong></div>
+    </div>
+    <div class="cl-row">
+      <div class="cl-loc">第四关 · 高风险标题</div>
+      <div class="cl-desc"><span class="cl-tag cl-add">更新</span>高风险卡片标题由"高风险"改为<strong>"拔管后呼吸衰竭高风险"</strong>，副标题注明"针对呼吸泵衰竭风险"，与第三关概念彻底区分</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  本流程基于 2017 ATS/ACCP · 2024 AARC · 2018/2025 SCCM PADIS · 2022 ERS HFNC 四项指南制定<br>
+  临床决策需结合个体情况，指南推荐不能替代床旁临床判断
+</div>
+
+<div style="margin-top:24px;padding:12px 0 8px;text-align:center;font-size:11px;color:#888;border-top:1px solid #e0e0e0;">Designed by 葱头爸爸 · liamphoenixwayne@outlook.com</div>
+</body>
+</html>
