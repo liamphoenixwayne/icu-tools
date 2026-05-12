@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICU 血气分析仪 v6.3</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f5f7fa;
+    --surface2: #eef1f5;
+    --border: #d0d7e2;
+    --accent: #0077cc;
+    --accent2: #00964b;
+    --warn: #d97000;
+    --danger: #cc1a35;
+    --text: #1a2030;
+    --text-dim: #6b7a90;
+    --text-bright: #0d1520;
+    --mono: 'Menlo', 'Courier New', monospace;
+    --sans: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Grid background removed for light theme */    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px; font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: 0.02em;
+  }
+
+  h1 span {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  .status-bar {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    margin-left: auto;
+    text-align: right;
+  }
+
+  /* Input sections */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    background: rgba(0,212,255,0.1);
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,212,255,0.2);
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-bright);
+  }
+
+  .section-body {
+    padding: 16px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .field label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .field label .unit {
+    color: var(--accent);
+    font-size: 9px;
+  }
+
+  .field label .normal {
+    color: var(--text-dim);
+    font-size: 9px;
+    margin-left: auto;
+  }
+
+  input[type="number"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-bright);
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 8px 10px;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.15);
+  }
+
+  input[type="number"].abnormal {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  input[type="number"].borderline {
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--accent), #0055aa);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .analyze-btn:hover { opacity: 0.9; }
+  .analyze-btn:active { transform: scale(0.99); }
+
+  .clear-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .clear-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+  /* Results */
+  #results {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-icon {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .result-icon.normal { background: var(--accent2); }
+  .result-icon.warn { background: var(--warn); }
+  .result-icon.danger { background: var(--danger); }
+  .result-icon.info { background: var(--accent); }
+
+  .result-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: 0.06em;
+  }
+
+  .result-body {
+    padding: 14px;
+  }
+
+  .diagnosis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .diagnosis-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+  }
+
+  .diagnosis-item.primary { border-left-color: var(--danger); }
+  .diagnosis-item.secondary { border-left-color: var(--warn); background: #fff8f0; }
+  .diagnosis-item.normal { border-left-color: var(--accent2); background: #f0faf4; }
+  .diagnosis-item.info { border-left-color: var(--accent); background: #f0f6ff; }
+
+  .diagnosis-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 36px;
+  }
+
+  .diagnosis-content {
+    flex: 1;
+  }
+
+  .diagnosis-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 2px;
+  }
+
+  .diagnosis-detail {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* Treatment block */
+  .treatment-block {
+    margin-top: 10px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .treatment-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .treatment-title::before {
+    content: '▶';
+    font-size: 8px;
+  }
+
+  .treatment-step {
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .treatment-step:last-child { border-bottom: none; }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-content { color: var(--text); }
+
+  .step-content strong {
+    color: var(--text-bright);
+    font-weight: 600;
+  }
+
+  .step-content .dose {
+    font-family: var(--mono);
+    color: var(--accent2);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .step-content .warn-text { color: var(--warn); }
+  .step-content .danger-text { color: var(--danger); }
+
+  /* Lactate bar */
+  .lactate-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin: 8px 0;
+    overflow: hidden;
+  }
+
+  .lactate-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  /* Values summary */
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .value-chip {
+    padding: 8px 10px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .value-chip.abnormal { border-color: rgba(255,59,92,0.4); }
+  .value-chip.borderline { border-color: rgba(255,149,0,0.4); }
+
+  .value-chip-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .value-chip-val {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-top: 2px;
+  }
+
+  .value-chip.abnormal .value-chip-val { color: var(--danger); }
+  .value-chip.borderline .value-chip-val { color: var(--warn); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+  }
+
+  .disclaimer {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    text-align: center;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    letter-spacing: 0.04em;
+    line-height: 1.6;
+  }
+
+  .ckd-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 12px;
+  }
+
+  .toggle-box {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .ckd-toggle.active .toggle-box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .toggle-label {
+    font-size: 12px;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">ABG</div>
+    <div>
+      <h1>ICU 血气分析仪
+        <span>ARTERIAL BLOOD GAS ANALYZER v6.3</span>
+      </h1>
+    </div>
+    <div class="status-bar">仅供临床参考<br>不替代医师判断</div>
+  </header>
+
+  <!-- 血气核心 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-tag">CORE</div>
+      <div class="section-title">血气核心参数</div>
+    </div>
+    <div class="section-body">
+      <div class="grid">
+        <div class="field">
+          <label>pH <span class="normal">7.35–7.45</span></label>
+          <input type="number" id="pH" step="0.01" min="6.5" max="8.0" placeholder="7.40">
+        </div>
+        <div class="field">
+          <label>PaCO2 <span class="unit">mmHg</span><span class="normal">35–45</span></label>
+          <input type="number" id="PaCO2" step="0.1" placeholder="40">
+        </div>
+        <div class="field">
+          <label>PaO2 <span class="unit">mmHg</span><span class="normal">80–100</span></label>
+          <input type="number" id="PaO2" step="0.1" placeholder="90">
+        </div>
+        <div class="field">
+          <label>HCO3 Actual <span class="unit">mmol/L</span><span class="normal">22–26</span></label>
+          <input type="number" id="HCO3" step="0.1" placeholder="24">
+        </div>
+        <div class="field">
+          <label>SBE <span class="unit">mmol/L</span><span class="normal">-2 ~ +2</span></label>
+          <input type="number" id="BE" step="0.1" placeholder="0">
+        </div>
+        <div class="field">
+          <label>FiO2 <span class="unit">%</span><span class="normal">21–100</span></label>
+          <input type="number" id="FiO2" step="1" min="21" max="100" placeholder="21">
+        </div>
+        <div class="field">
+          <label>Lactate <span class="unit">mmol/L</span><span class="normal">&lt;2.0</span></label>
+          <input type="number" id="Lactate" step="0.1" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>Hb <span class="unit">g/L</span><span class="normal">120–160</span></label>
+          <input type="number" id="Hb" step="0.1" placeholder="130">
+        </div>
+        <div class="field">
+          <label>SaO2 <span class="unit">%</span><span class="normal">95–98</span></label>
+          <input type="number" id="SaO2" step="0.1" placeholder="97">
+        </div>
+        <div class="field">
+          <label>COHb <span class="unit">%</span><span class="normal">&lt;1.5</span></label>
+          <input type="number" id="COHb" step="0.01" placeholder="0.5">
+        </div>
+        <div class="field">
+          <label>MetHb <span class="unit">%</span><span class="normal">&lt;1.5</span></label>
+          <input type="number" id="MetHb" step="0.01" placeholder="0.3">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 电解质 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-tag">LYTES</div>
+      <div class="section-title">电解质</div>
+    </div>
+    <div class="section-body">
+      <div class="grid">
+        <div class="field">
+          <label>Na <span class="unit">mmol/L</span><span class="normal">136–145</span></label>
+          <input type="number" id="Na" step="0.1" placeholder="140">
+        </div>
+        <div class="field">
+          <label>K <span class="unit">mmol/L</span><span class="normal">3.5–5.0</span></label>
+          <input type="number" id="K" step="0.1" placeholder="4.0">
+        </div>
+        <div class="field">
+          <label>Cl <span class="unit">mmol/L</span><span class="normal">98–106</span></label>
+          <input type="number" id="Cl" step="0.1" placeholder="102">
+        </div>
+        <div class="field">
+          <label>Ca(离子) <span class="unit">mmol/L</span><span class="normal">1.15–1.35</span></label>
+          <input type="number" id="Ca" step="0.01" placeholder="1.20">
+        </div>
+        <div class="field">
+          <label>Albumin <span class="unit">g/L</span><span class="normal">35–50</span></label>
+          <input type="number" id="Albumin" step="0.1" placeholder="40">
+        </div>
+        <div class="field">
+          <label>Glucose <span class="unit">mmol/L</span><span class="normal">3.9–6.1</span></label>
+          <input type="number" id="Glucose" step="0.1" placeholder="5.0">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 患者信息 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-tag">PATIENT</div>
+      <div class="section-title">患者信息（用于剂量计算）</div>
+    </div>
+    <div class="section-body">
+      <div class="grid">
+        <div class="field">
+          <label>体重 <span class="unit">kg</span></label>
+          <input type="number" id="Weight" step="0.1" placeholder="60">
+        </div>
+        <div class="field">
+          <label>CrCl <span class="unit">ml/min</span><span class="normal">&gt;90</span></label>
+          <input type="number" id="Creatinine" step="1" placeholder="90">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="ckd-toggle" id="ventToggle" onclick="toggleVent()" style="max-width:280px">
+          <div class="toggle-box" id="ventBox"></div>
+          <div class="toggle-label">患者当前机械通气中</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 粘贴解析 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-tag">OCR</div>
+      <div class="section-title">粘贴文字自动识别</div>
+    </div>
+    <div class="section-body">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;font-family:var(--mono);line-height:1.6;">
+        用 iOS「实况文本」对准血气报告屏幕 → 全选复制 → 粘贴到下方 → 点击解析
+      </div>
+      <textarea id="pasteBox" placeholder="把血气报告文字粘贴到这里..." style="
+        width:100%;height:120px;
+        background:#fff;border:1px solid var(--border);border-radius:6px;
+        color:var(--text);font-family:var(--mono);font-size:12px;
+        padding:10px;resize:vertical;line-height:1.6;
+        outline:none;
+      "></textarea>
+      <button class="analyze-btn" style="margin-top:8px;background:linear-gradient(135deg,var(--accent2),#00aa66);" onclick="parsePaste()">⊕ 解析并填入</button>
+      <div id="parseResult" style="margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--accent2);display:none;"></div>
+    </div>
+  </div>
+
+  <button class="analyze-btn" onclick="analyze()">▶ 开始分析</button>
+  <button class="clear-btn" onclick="clearAll()">清空所有数据</button>
+
+  <!-- Results -->
+  <div id="results">
+    <div style="height:20px"></div>
+    <div id="results-content"></div>
+    <div class="disclaimer">
+      ⚠ 本工具仅供ICU医师临床参考，所有处理建议须结合患者具体情况判断。<br>
+      剂量计算基于标准公式，不适用于透析患者、儿科患者及特殊代谢状态。
+    </div>
+  </div>
+
+</div>
+
+<script>
+function v(id) {
+  const val = parseFloat(document.getElementById(id).value);
+  return isNaN(val) ? null : val;
+}
+
+let isVentilated = false;
+function toggleVent() {
+  isVentilated = !isVentilated;
+  document.getElementById('ventToggle').classList.toggle('active', isVentilated);
+}
+function clearAll() {
+  document.querySelectorAll('input').forEach(i => i.value = '');
+  document.getElementById('pasteBox').value = '';
+  document.getElementById('parseResult').style.display = 'none';
+  isVentilated = false;
+  document.getElementById('ventToggle').classList.remove('active');
+  document.getElementById('results').style.display = 'none';
+}
+
+function hasAKI() {
+  // CrCl < 60 ml/min -> 肾功能受损（KDIGO Stage 3+），需调整剂量
+  const crcl = v('Creatinine');
+  return crcl !== null && crcl < 60;
+}
+
+function stage4CKD() {
+  // CrCl 15-29 ml/min -> KDIGO Stage 4，需大幅调整
+  const crcl = v('Creatinine');
+  return crcl !== null && crcl >= 15 && crcl < 30;
+}
+
+function severeCKD() {
+  // CrCl < 15 ml/min -> KDIGO Stage 5/终末期
+  const crcl = v('Creatinine');
+  return crcl !== null && crcl < 15;
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+function analyze() {
+  const pH = v('pH'), pco2 = v('PaCO2'), po2 = v('PaO2'),
+        hco3 = v('HCO3'), be = v('BE'), fio2 = v('FiO2'),
+        lactate = v('Lactate'), hb = v('Hb'), sao2 = v('SaO2'),
+        cohb = v('COHb'), methb = v('MetHb'), na = v('Na'), k = v('K'),
+        cl = v('Cl'), ca = v('Ca'),
+        alb = v('Albumin'), gluc = v('Glucose'),
+        wt = v('Weight'), cr = v('Creatinine');
+
+  if (!pH || !pco2 || !hco3) {
+    alert('请至少输入 pH、PaCO2、HCO3');
+    return;
+  }
+
+  let sections = [];
+
+  // ── 1. OXYGENATION ─────────────────────────────────────────────────────────
+  if (po2 && fio2) {
+    const fi = fio2 / 100;
+    const pf = po2 / fi;
+    const pao2 = (713 * fi) - (pco2 / 0.8);
+    const aa = pao2 - po2;
+
+    let pfGrade = '', pfClass = 'normal', aaNote = '';
+    if (pf >= 400)      { pfGrade = '正常';                              pfClass = 'normal'; }
+    else if (pf >= 300) { pfGrade = '低氧（非ARDS，P/F 300-400）';        pfClass = 'info'; }
+    else if (pf >= 200) { pfGrade = 'ARDS轻度（P/F 200-300）';            pfClass = 'info'; }
+    else if (pf >= 100) { pfGrade = 'ARDS中度（P/F 100-200）';            pfClass = 'warn'; }
+    else                { pfGrade = 'ARDS重度（P/F<100）';                 pfClass = 'danger'; }
+
+    if (aa > 15)      aaNote = `A-a梯度升高（${aa.toFixed(0)} mmHg）-> V/Q失调或分流（肺炎/肺水肿/PE/ARDS）`;
+    else if (aa >= 0) aaNote = `A-a梯度正常（${aa.toFixed(0)} mmHg，正常值<15）-> 无V/Q失调证据`;
+    else              aaNote = `A-a梯度为负值（${aa.toFixed(0)} mmHg）-> 数据异常，请核查FiO2是否填写正确（FiO2填低会导致PAO2低估）`;
+
+    // 氧合处理建议
+    const oxyTx = [];
+
+    if (pf < 400) {
+      if (!isVentilated) {
+        // 未插管处理建议
+        const hfncSteps = [];
+        if (pf >= 300) {
+          // P/F 300-400：轻度氧合受损，普通氧疗+监测
+          hfncSteps.push({ n: '01', content: '普通氧疗（鼻导管/面罩）维持SpO2>=94%，暂不需要HFNC' });
+          hfncSteps.push({ n: '02', content: 'A-a梯度升高提示存在V/Q失调，积极查找病因（肺炎/PE/肺水肿）' });
+          hfncSteps.push({ n: '03', content: '若氧需求持续增加或出现呼吸做功增加（呼吸频率加快/辅助呼吸肌动用）-> 升级至HFNC' });
+          oxyTx.push({ title: '未插管氧合处理（普通氧疗）', steps: hfncSteps });
+        } else if (pf >= 200) {
+          // P/F 200-300：ARDS轻度，考虑HFNC
+          hfncSteps.push({ n: '01', content: '普通氧疗已不足时考虑<strong>HFNC</strong>：初始流量40-60 L/min，FiO2滴定至SpO2 92-96%' });
+          hfncSteps.push({ n: '02', content: 'COPD/高碳酸血症/心源性肺水肿：优先考虑NIV，HFNC作替代' });
+          hfncSteps.push({ n: '03', content: '<span class="warn-text">1-2h后重评ROX指数（SpO2/FiO2÷呼吸频率）：<4.88提示HFNC失败风险高，提前准备插管</span>' });
+          hfncSteps.push({ n: '04', content: 'ROX = SpO2(%) ÷ FiO2(小数) ÷ 呼吸频率' });
+          oxyTx.push({ title: '未插管氧合处理（ARDS轻度，考虑HFNC）', steps: hfncSteps });
+        } else if (pf >= 100) {
+          // P/F 100-200：ARDS中度，HFNC+密切监测，准备插管
+          hfncSteps.push({ n: '01', content: '<strong>HFNC或NIV</strong>：HFNC流量40-60 L/min；NIV尤其适合COPD/心源性肺水肿' });
+          hfncSteps.push({ n: '02', content: '<span class="warn-text">每1-2h评估ROX指数；ROX<4.88 -> 插管风险高，不应延误</span>' });
+          hfncSteps.push({ n: '03', content: '插管指征：意识改变、呼吸频率>35、辅助呼吸肌明显用力、ROX<4.88、SpO2持续不达标' });
+          hfncSteps.push({ n: '04', content: 'HFNC/NIV可作桥接，但需提前与家属沟通插管可能' });
+          oxyTx.push({ title: '未插管氧合处理（ARDS中度，HFNC+准备插管）', steps: hfncSteps });
+        } else {
+          // P/F <100：ARDS重度，紧急插管评估
+          hfncSteps.push({ n: '01', content: '<span class="danger-text">P/F<100（ARDS重度）且未插管：立即评估插管指征</span>' });
+          hfncSteps.push({ n: '02', content: 'HFNC/NIV仅作极短暂桥接，<strong>不应延误插管</strong>' });
+          hfncSteps.push({ n: '03', content: '插管指征：意识改变、呼吸频率>35、辅助呼吸肌用力、ROX<4.88、任何血流动力学不稳定' });
+          oxyTx.push({ title: '未插管氧合处理（ARDS重度，紧急插管评估）', steps: hfncSteps });
+        }
+      } else {
+        // 机械通气处理建议
+        const ventSteps = [];
+
+        // ARDSnet PEEP/FiO2 table（低PEEP版）
+        const peepTable = [
+          { fi2: 0.30, peep: 5 }, { fi2: 0.40, peep: 5 }, { fi2: 0.40, peep: 8 },
+          { fi2: 0.50, peep: 8 }, { fi2: 0.50, peep: 10 }, { fi2: 0.60, peep: 10 },
+          { fi2: 0.70, peep: 10 }, { fi2: 0.70, peep: 12 }, { fi2: 0.70, peep: 14 },
+          { fi2: 0.80, peep: 14 }, { fi2: 0.90, peep: 14 }, { fi2: 0.90, peep: 16 },
+          { fi2: 0.90, peep: 18 }, { fi2: 1.00, peep: 18 }, { fi2: 1.00, peep: 20 },
+          { fi2: 1.00, peep: 22 }, { fi2: 1.00, peep: 24 }
+        ];
+        const highPeepTable = [
+          { fi2: 0.30, peep: 12 }, { fi2: 0.40, peep: 14 }, { fi2: 0.50, peep: 14 },
+          { fi2: 0.50, peep: 16 }, { fi2: 0.50, peep: 18 }, { fi2: 0.60, peep: 20 },
+          { fi2: 0.70, peep: 20 }, { fi2: 0.80, peep: 20 }, { fi2: 0.80, peep: 22 },
+          { fi2: 0.90, peep: 22 }, { fi2: 1.00, peep: 22 }, { fi2: 1.00, peep: 24 }
+        ];
+
+        // 找最接近当前FiO2的推荐PEEP（低PEEP表）
+        let recPeepLow = 5, recPeepHigh = 12;
+        const fiDec = fi;
+        for (const row of peepTable) {
+          if (fiDec <= row.fi2) { recPeepLow = row.peep; break; }
+          recPeepLow = row.peep;
+        }
+        for (const row of highPeepTable) {
+          if (fiDec <= row.fi2) { recPeepHigh = row.peep; break; }
+          recPeepHigh = row.peep;
+        }
+
+        ventSteps.push({ n: '01', content: `<strong>ARDSnet肺保护通气</strong>：潮气量 6 ml/kg（理想体重），平台压<30 cmH2O，驱动压目标<15 cmH2O` });
+        ventSteps.push({ n: '02', content: `<strong>ARDSnet PEEP/FiO2参考</strong>（当前FiO2 ${fio2}%）：<br>低PEEP策略推荐PEEP <span class="dose">${recPeepLow} cmH2O</span><br>高PEEP策略（P/F<200时优先）推荐PEEP <span class="dose">${recPeepHigh} cmH2O</span>` });
+        ventSteps.push({ n: '03', content: '目标：SpO2 88-95%，PaO2 55-80 mmHg。<strong>允许性高碳酸血症</strong>（pH>7.20可耐受）' });
+
+        if (pf < 150) {
+          ventSteps.push({ n: '04', content: '<strong>俯卧位通气指征（P/F<150）</strong>：机械通气优化12-24h后P/F仍<150 且 FiO2>=60% -> 俯卧位>=16h/次（PROSEVA试验，ATS 2024推荐）' });
+          ventSteps.push({ n: '05', content: '俯卧位禁忌：脊柱/股骨/骨盆不稳定骨折、腹部开放伤口、血流动力学不稳定需电复律' });
+        }
+        if (pf < 80) {
+          ventSteps.push({ n: '06', content: '<span class="danger-text">P/F<80（极重度）：评估VV-ECMO指征，转至有ECMO能力的中心</span>' });
+        }
+        if (pf < 150 && fi >= 0.6) {
+          ventSteps.push({ n: '07', content: '神经肌肉阻滞剂（顺阿曲库铵）：深度镇静下仍有严重人机对抗时可考虑（ATS 2024弱推荐，注意ICU获得性肌无力风险）' });
+        }
+        oxyTx.push({ title: '机械通气氧合管理', steps: ventSteps });
+      }
+    }
+
+    // CaO2计算
+    const oxyItems = [
+      { type: pfClass, label: 'P/F', name: `P/F = ${pf.toFixed(0)}`,           detail: pfGrade },
+      { type: 'info',  label: 'A-a', name: `A-a梯度 = ${aa.toFixed(0)} mmHg`,  detail: aaNote }
+    ];
+
+    if (hb && sao2) {
+      const cao2 = (hb / 10 * 1.34 * sao2 / 100 + po2 * 0.003).toFixed(1);
+      const cao2Val = parseFloat(cao2);
+      // CaO2正常范围：成人约18-21 ml/dL；<15为偏低，但需结合氧合状态判断原因
+      const isHypoxic = pf < 300;  // 同时存在低氧才是双重打击
+      const cao2Class = cao2Val < 10 ? 'danger' : cao2Val < 15 ? 'warn' : 'normal';
+      let cao2Detail = '';
+      if (cao2Val < 10) {
+        cao2Detail = isHypoxic
+          ? `严重氧含量不足（Hb ${hb} g/L，SaO2 ${sao2}%，P/F ${pf.toFixed(0)}）-> 贫血+低氧双重打击，需同时纠正`
+          : `严重低CaO2（Hb ${hb} g/L）-> 主要由重度贫血导致，氧合尚可；结合临床评估输血指征`;
+      } else if (cao2Val < 15) {
+        cao2Detail = isHypoxic
+          ? `氧含量偏低（Hb ${hb} g/L，同时存在低氧）-> 贫血+低氧，评估输血+改善氧合`
+          : `氧含量偏低（Hb ${hb} g/L）-> 由贫血导致，氧合正常；结合临床评估是否需要输血`;
+      } else {
+        cao2Detail = `氧含量正常（Hb ${hb} g/L，SaO2 ${sao2}%）`;
+      }
+      oxyItems.push({
+        type: cao2Class, label: 'CaO2',
+        name: `CaO2 = ${cao2} ml/dL`,
+        detail: cao2Detail
+      });
+    } else if (hb) {
+      const hbClass = hb < 70 ? 'danger' : hb < 90 ? 'warn' : hb < 120 ? 'borderline' : 'normal';
+      const hbDetail = hb < 70 ? '重度贫血，ICU输血指征（Hb<70）' : hb < 90 ? '中度贫血，结合临床评估输血' : hb < 120 ? '轻度贫血' : '正常';
+      oxyItems.push({ type: hbClass, label: 'Hb', name: `Hb = ${hb} g/L`, detail: hbDetail });
+    }
+
+    // COHb
+    if (cohb !== null) {
+      if (cohb > 25) {
+        oxyItems.push({ type: 'danger', label: 'COHb', name: `COHb ${cohb}% -> 重度CO中毒`, detail: '100% O2面罩或高压氧治疗，监测神经系统症状' });
+        oxyTx.push({ title: 'CO中毒处理', steps: [
+          { n: '01', content: '<strong>立即100% O2</strong>（非重复呼吸面罩），CO半衰期：空气下5h -> 100%O2下1h' },
+          { n: '02', content: 'COHb>25% 或神经系统症状 -> <strong>高压氧治疗（HBO）指征</strong>，联系HBO中心' },
+          { n: '03', content: '监测心电图（CO->心肌缺血），查肌钙蛋白，监测乳酸（组织缺氧）' },
+          { n: '04', content: '注意：SpO2假性正常（血氧仪无法区分COHb和OxyHb），需依赖血气COHb值' }
+        ]});
+      } else if (cohb > 10) {
+        oxyItems.push({ type: 'warn', label: 'COHb', name: `COHb ${cohb}% -> 中度CO中毒`, detail: '100% O2治疗，评估高压氧指征' });
+      } else if (cohb > 3) {
+        oxyItems.push({ type: 'borderline', label: 'COHb', name: `COHb ${cohb}% -> 轻度升高`, detail: '吸烟者可达3-5%，>3%需排查CO暴露' });
+      }
+    }
+
+    // MetHb
+    if (methb !== null) {
+      if (methb > 30) {
+        oxyItems.push({ type: 'danger', label: 'MetHb', name: `MetHb ${methb}% -> 重度高铁血红蛋白血症`, detail: '紧急亚甲蓝治疗' });
+        oxyTx.push({ title: '高铁血红蛋白血症处理', steps: [
+          { n: '01', content: '<strong>亚甲蓝（美蓝）</strong>：1-2 mg/kg（1-2 ml/kg of 1%溶液）IV，5-10min推完；30min后复查MetHb，必要时重复' },
+          { n: '02', content: '100% O2辅助，支持治疗' },
+          { n: '03', content: '查诱因：亚硝酸盐/氨苯砜/达普松/局麻药（苯佐卡因）/硝酸甘油大剂量' },
+          { n: '04', content: 'G6PD缺乏者禁用亚甲蓝 -> 改用维生素C或换血治疗' }
+        ]});
+      } else if (methb > 10) {
+        oxyItems.push({ type: 'warn', label: 'MetHb', name: `MetHb ${methb}% -> 中度高铁血红蛋白`, detail: '有症状时给予亚甲蓝，查诱因' });
+      } else if (methb > 1.5) {
+        oxyItems.push({ type: 'borderline', label: 'MetHb', name: `MetHb ${methb}% -> 轻度升高`, detail: '监测，查诱因（药物/毒素）' });
+      }
+    }
+
+    sections.push({
+      title: '氧合评估', icon: pfClass,
+      items: oxyItems,
+      treatments: oxyTx
+    });
+  }
+
+  // ── 独立Hb判读（不依赖氧合模块，确保任何情况都显示）────────────────────
+  if (hb !== null) {
+    const hbItems = [];
+    const hbTx = [];
+    if (hb < 70) {
+      hbItems.push({ type: 'danger', label: 'Hb', name: `Hb ${hb} g/L -> 重度贫血`, detail: 'ICU输血指征（Hb<70 g/L），评估出血来源' });
+      hbTx.push({ title: '重度贫血处理', steps: [
+        { n: '01', content: '输注红细胞（pRBC），目标Hb>=70 g/L（一般ICU）或>=80 g/L（冠心病/ACS患者）' },
+        { n: '02', content: '每单位pRBC约升Hb 10 g/L（70kg患者）' },
+        { n: '03', content: '输血前后复查Hb，排查活动性出血' },
+        { n: '04', content: 'SaO2已知时CaO2= ' + (hb && sao2 ? (hb/10*1.34*sao2/100 + (po2||0)*0.003).toFixed(1) + ' ml/dL' : '需补充SaO2') }
+      ]});
+    } else if (hb < 90) {
+      hbItems.push({ type: 'warn', label: 'Hb', name: `Hb ${hb} g/L -> 中度贫血`, detail: '结合临床症状评估输血，脓毒症/ARDS目标Hb>=70' });
+    } else if (hb < 120) {
+      hbItems.push({ type: 'borderline', label: 'Hb', name: `Hb ${hb} g/L -> 轻度贫血`, detail: '监测，查贫血原因' });
+    }
+    if (hbItems.length > 0) {
+      sections.push({ title: 'Hb / 氧输送', icon: hb < 70 ? 'danger' : hb < 90 ? 'warn' : 'info', items: hbItems, treatments: hbTx });
+    }
+  }
+
+  // ── 2. ACID-BASE ────────────────────────────────────────────────────────────
+  const abItems = [];
+  let acidbaseFindings = [];
+
+  // Step 1: pH
+  const isAcidemia = pH < 7.35;
+  const isAlkalemia = pH > 7.45;
+  const pHNormal = !isAcidemia && !isAlkalemia;
+
+  // Step 2: primary disorder
+  let primary = '';
+  let isMetAcid = false, isMetAlk = false, isRespAcid = false, isRespAlk = false;
+
+  if (isAcidemia) {
+    if (pco2 > 45) { primary = '呼吸性酸中毒'; isRespAcid = true; }
+    if (hco3 < 22) { primary = '代谢性酸中毒'; isMetAcid = true; }
+    if (pco2 > 45 && hco3 < 22) { primary = '混合型酸中毒（呼吸性+代谢性）'; isRespAcid = true; isMetAcid = true; }
+  } else if (isAlkalemia) {
+    if (pco2 < 35) { primary = '呼吸性碱中毒'; isRespAlk = true; }
+    if (hco3 > 26) { primary = '代谢性碱中毒'; isMetAlk = true; }
+    if (pco2 < 35 && hco3 > 26) { primary = '混合型碱中毒（呼吸性+代谢性）'; isRespAlk = true; isMetAlk = true; }
+  } else {
+    // pH normal - could be mixed
+    if (pco2 > 45 && hco3 > 26) { primary = 'pH正常：慢性呼吸性酸中毒代偿'; isRespAcid = true; }
+    else if (pco2 < 35 && hco3 < 22) { primary = 'pH正常：慢性呼吸性碱中毒代偿'; isRespAlk = true; }
+    else if (pco2 > 45 && hco3 < 22) { primary = 'pH正常：混合型（呼吸性酸中毒+代谢性碱中毒）'; isRespAcid = true; isMetAlk = true; }
+    else if (pco2 < 35 && hco3 > 26) { primary = 'pH正常：混合型（呼吸性碱中毒+代谢性酸中毒）'; isRespAlk = true; isMetAcid = true; }
+    else { primary = '酸碱平衡正常'; }
+  }
+
+  abItems.push({ type: isAcidemia ? 'danger' : isAlkalemia ? 'warn' : 'normal',
+    label: 'pH', name: `pH ${pH.toFixed(2)}`,
+    detail: isAcidemia ? '酸血症' : isAlkalemia ? '碱血症' : '正常范围' });
+  abItems.push({ type: 'primary', label: '原发', name: primary, detail: '' });
+
+  // Step 3: Compensation check
+  // ── 代偿验证（容差±2，方向判断，急慢性双公式）──────────────────────────
+
+  // 代谢性酸中毒 -> 验证呼吸代偿（Winter公式）
+  if (isMetAcid && !isRespAcid) {
+    const expPCO2 = 1.5 * hco3 + 8;
+    const lo = expPCO2 - 2, hi = expPCO2 + 2;
+    let compType, compDetail;
+    if (pco2 >= lo && pco2 <= hi) {
+      compType = 'normal';
+      compDetail = `呼吸代偿适当（Winter公式预期PCO2 ${lo.toFixed(0)}-${hi.toFixed(0)} mmHg，实测 ${pco2}）`;
+    } else if (pco2 > hi) {
+      compType = 'danger';
+      compDetail = `呼吸代偿不足（预期PCO2 <=${hi.toFixed(0)}，实测 ${pco2} -> 偏高）-> 合并呼吸性酸中毒`;
+      isRespAcid = true;
+    } else {
+      compType = 'warn';
+      compDetail = `PCO2低于预期（预期PCO2 >=${lo.toFixed(0)}，实测 ${pco2}）-> 合并呼吸性碱中毒`;
+      isRespAlk = true;
+    }
+    abItems.push({ type: compType, label: '代偿', name: compDetail, detail: '' });
+  }
+
+  // 代谢性碱中毒 -> 验证呼吸代偿
+  if (isMetAlk && !isRespAlk) {
+    const expPCO2 = 0.7 * hco3 + 21;
+    const lo = expPCO2 - 2, hi = expPCO2 + 2;
+    let compType, compDetail;
+    if (pco2 >= lo && pco2 <= hi) {
+      compType = 'normal';
+      compDetail = `呼吸代偿适当（预期PCO2 ${lo.toFixed(0)}-${hi.toFixed(0)} mmHg，实测 ${pco2}）`;
+    } else if (pco2 < lo) {
+      compType = 'warn';
+      compDetail = `PCO2低于预期（预期PCO2 >=${lo.toFixed(0)}，实测 ${pco2}）-> 合并呼吸性碱中毒`;
+      isRespAlk = true;
+    } else {
+      compType = 'danger';
+      compDetail = `呼吸代偿不足（预期PCO2 <=${hi.toFixed(0)}，实测 ${pco2}）-> 合并呼吸性酸中毒`;
+      isRespAcid = true;
+    }
+    abItems.push({ type: compType, label: '代偿', name: compDetail, detail: '' });
+  }
+
+  // 呼吸性酸中毒 -> 验证肾脏代偿（急慢性双公式，±2容差）
+  if (isRespAcid && !isMetAcid) {
+    const expAcute   = 24 + (pco2 - 40) * 0.1;   // 急性：每升高10 mmHg，HCO3+1
+    const expChronic = 24 + (pco2 - 40) * 0.35;  // 慢性：每升高10 mmHg，HCO3+3.5
+    const loA = expAcute - 2,   hiA = expAcute + 2;
+    const loC = expChronic - 2, hiC = expChronic + 2;
+    let compDetail, compType;
+    if (hco3 >= loA && hco3 <= hiA) {
+      compType = 'info';
+      compDetail = `急性肾脏代偿适当（急性预期HCO3 ${loA.toFixed(0)}-${hiA.toFixed(0)}，实测 ${hco3}）`;
+    } else if (hco3 >= loC && hco3 <= hiC) {
+      compType = 'info';
+      compDetail = `慢性肾脏代偿适当（慢性预期HCO3 ${loC.toFixed(0)}-${hiC.toFixed(0)}，实测 ${hco3}）`;
+    } else if (hco3 > hiC) {
+      compType = 'warn';
+      compDetail = `HCO3高于慢性代偿上限（预期最高 ${hiC.toFixed(0)}，实测 ${hco3}）-> 合并代谢性碱中毒`;
+      isMetAlk = true;
+    } else if (hco3 < loA) {
+      compType = 'danger';
+      compDetail = `HCO3低于急性代偿下限（预期最低 ${loA.toFixed(0)}，实测 ${hco3}）-> 合并代谢性酸中毒`;
+      isMetAcid = true;
+    } else {
+      compType = 'info';
+      compDetail = `HCO3介于急慢性代偿范围之间（急性预期 ${loA.toFixed(0)}-${hiA.toFixed(0)}，慢性预期 ${loC.toFixed(0)}-${hiC.toFixed(0)}，实测 ${hco3}）`;
+    }
+    abItems.push({ type: compType, label: '代偿', name: compDetail, detail: '' });
+  }
+
+  // 呼吸性碱中毒 -> 验证肾脏代偿（急慢性双公式，±2容差）
+  if (isRespAlk && !isMetAlk) {
+    const expAcute   = 24 - (40 - pco2) * 0.2;   // 急性：每降低10 mmHg，HCO3-2
+    const expChronic = 24 - (40 - pco2) * 0.5;   // 慢性：每降低10 mmHg，HCO3-5
+    const loA = expAcute - 2,   hiA = expAcute + 2;
+    const loC = expChronic - 2, hiC = expChronic + 2;
+    let compDetail, compType;
+    if (hco3 >= loA && hco3 <= hiA) {
+      compType = 'info';
+      compDetail = `急性肾脏代偿适当（急性预期HCO3 ${loA.toFixed(0)}-${hiA.toFixed(0)}，实测 ${hco3}）`;
+    } else if (hco3 >= loC && hco3 <= hiC) {
+      compType = 'info';
+      compDetail = `慢性肾脏代偿适当（慢性预期HCO3 ${loC.toFixed(0)}-${hiC.toFixed(0)}，实测 ${hco3}）`;
+    } else if (hco3 < loC) {
+      compType = 'danger';
+      compDetail = `HCO3低于慢性代偿下限（预期最低 ${loC.toFixed(0)}，实测 ${hco3}）-> 合并代谢性酸中毒`;
+      isMetAcid = true;
+    } else if (hco3 > hiA) {
+      compType = 'warn';
+      compDetail = `HCO3高于急性代偿上限（预期最高 ${hiA.toFixed(0)}，实测 ${hco3}）-> 合并代谢性碱中毒`;
+      isMetAlk = true;
+    } else {
+      compType = 'info';
+      compDetail = `HCO3介于急慢性代偿范围之间（急性预期 ${loA.toFixed(0)}-${hiA.toFixed(0)}，慢性预期 ${loC.toFixed(0)}-${hiC.toFixed(0)}，实测 ${hco3}）`;
+    }
+    abItems.push({ type: compType, label: '代偿', name: compDetail, detail: '' });
+  }
+
+  // Step 4: Anion Gap
+  let ag = null, agCorr = null, deltaRatio = null;
+  if (na && cl) {
+    ag = na - cl - hco3;
+    const albCorr = alb ? (40 - alb) * 0.25 : 0;
+    agCorr = ag + albCorr;
+    const normalAG = 12;
+    const isHighAG = agCorr > normalAG + 4;
+
+    // AG判读：必须结合pH和HCO3，不能单独诊断代谢性酸中毒
+    let agDetail = '', agType = 'normal';
+    if (isHighAG) {
+      if (isMetAcid) {
+        // 有代酸 + 高AG -> 高AG代谢性酸中毒
+        agDetail = '高AG代谢性酸中毒：乳酸酸中毒 / 酮症酸中毒 / 尿毒症 / 中毒';
+        agType = 'danger';
+      } else if (isAlkalemia || pHNormal) {
+        // 碱血症/pH正常 + 高AG -> 提示可能隐匿性代酸，需Delta-Delta
+        agDetail = 'AG升高但无代谢性酸中毒表现；可能为隐匿性代酸被碱中毒掩盖，见Delta/Delta';
+        agType = 'warn';
+      }
+    } else {
+      agDetail = 'AG正常';
+      agType = 'normal';
+    }
+
+    abItems.push({
+      type: agType,
+      label: 'AG',
+      name: `AG = ${ag.toFixed(1)}（白蛋白校正后 ${agCorr.toFixed(1)}）`,
+      detail: agDetail
+    });
+
+    // Delta-Delta：高AG时均计算，不限于代酸
+    if (isHighAG) {
+      const deltaAG = agCorr - normalAG;
+      const deltaHCO3 = 24 - hco3;
+      deltaRatio = deltaAG / deltaHCO3;
+      let ddNote = '';
+      if (isMetAcid) {
+        // 代酸情境下的Delta-Delta
+        if (deltaRatio < 0.4) ddNote = 'Delta/Delta<0.4 -> 合并正常AG代谢性酸中毒';
+        else if (deltaRatio <= 0.8) ddNote = 'Delta/Delta 0.4-0.8 -> 混合型代谢性酸中毒';
+        else if (deltaRatio <= 2.0) ddNote = 'Delta/Delta 0.8-2.0 -> 单纯高AG代谢性酸中毒';
+        else ddNote = 'Delta/Delta>2.0 -> 合并代谢性碱中毒';
+      } else {
+        // 无代酸（碱血症/pH正常）情境下的Delta-Delta
+        if (deltaRatio > 2.0) ddNote = 'Delta/Delta>2.0 + 碱血症 -> 高AG代谢性酸中毒被代谢性碱中毒掩盖（混合型）';
+        else if (deltaRatio >= 0.8) ddNote = 'Delta/Delta 0.8-2.0 -> AG升高可能反映轻度代谢性酸中毒被碱中毒代偿掩盖';
+        else ddNote = 'Delta/Delta<0.8 -> AG升高幅度与HCO3变化不匹配，需结合临床';
+      }
+      abItems.push({ type: 'secondary', label: 'Δ/Δ', name: `Delta/Delta = ${deltaRatio.toFixed(2)}`, detail: ddNote });
+    }
+  }
+
+  sections.push({ title: '酸碱分析', icon: isAcidemia ? 'danger' : isAlkalemia ? 'warn' : 'normal', items: abItems });
+
+  // ── 3. TREATMENT ───────────────────────────────────────────────────────────
+  const txItems = [];
+  const ckdAdjust = hasAKI();
+  const isStage4 = stage4CKD();
+  const isSevereKidney = severeCKD();
+  const isDKA = gluc && gluc > 14 && agCorr && agCorr > 16;
+
+  if (isMetAcid) {
+    const isHighAG2 = agCorr && agCorr > 16 && isMetAcid;
+    if (isHighAG2) {
+      // ── 高AG代谢性酸中毒：按原因分支 ──────────────────────────────────
+      const bicarbStep = () => {
+        if (pH <= 7.2 && be !== null) {
+          const mmol = wt ? (0.3 * wt * Math.abs(be)).toFixed(0) : '-';
+          const ml   = wt ? Math.round(mmol * 1.68) : '-';
+          const half = wt ? Math.round(ml / 2) : '-';
+          return { n: 'B', content: `<strong>补碱指征（pH<=7.20 合并AKI时考虑）</strong><br>5% NaHCO3：<span class="dose">${ml} ml</span>，首次给1/2量（${half} ml），复查血气后补余量<br><span class="warn-text">[!] 注意低钙/高钠，BICAR-ICU：总体死亡率无差异，可减少RRT需求</span>` };
+        } else {
+          return { n: 'B', content: 'pH>7.20：<strong>不建议常规补碱</strong>，以治原发病为主' };
+        }
+      };
+
+      // 1. 乳酸酸中毒（Lactate升高触发）
+      if (lactate && lactate >= 2) {
+        txItems.push({ title: '高AG代谢性酸中毒 - 乳酸酸中毒', steps: [
+          { n: '01', content: '治疗核心：<strong>改善组织氧输送</strong>，乳酸下降是复苏充分的标志' },
+          { n: '02', content: '液体复苏 + 去甲肾上腺素维持MAP>=65 mmHg（见乳酸模块）' },
+          { n: '03', content: '排查药物性（肾上腺素/二甲双胍/丙泊酚/异烟肼）、肝衰竭（清除障碍）' },
+          bicarbStep()
+        ]});
+      }
+
+      // 2. DKA（血糖>14 + 高AG触发）
+      if (isDKA) {
+        const kNote = k && k < 3.5
+          ? `<span class="danger-text">[!] 当前K ${k} mmol/L < 3.5：先补钾至K>=3.3再启动胰岛素（防止胰岛素驱使K入细胞加重低钾）</span>`
+          : `当前K ${k || '未填'} mmol/L，K>=3.3可启动胰岛素`;
+        txItems.push({ title: '高AG代谢性酸中毒 - DKA（血糖>14 + 高AG）', steps: [
+          { n: '01', content: `<strong>补液</strong>：0.9%NS 1L/h × 前2h，之后根据血流动力学调整（目标补液速度250-500 ml/h）` },
+          { n: '02', content: kNote },
+          { n: '03', content: '<strong>胰岛素</strong>：普通胰岛素0.1 U/kg/h静脉泵入，目标血糖下降速度3-4 mmol/L/h；血糖降至11 mmol/L改为0.05 U/kg/h + 加入5%葡萄糖' },
+          { n: '04', content: '<strong>补钾</strong>：K 3.5-5.5时每小时补KCl 20-40 mEq；K<3.5时加大补钾速度（优先于胰岛素）' },
+          { n: '05', content: 'DKA补碱指征极严格（pH<6.9才考虑）；常规不补碱，酸中毒随胰岛素治疗自行纠正' },
+          { n: '06', content: '每1-2h监测血气/血糖/电解质，关注低磷（再喂养效应）' }
+        ]});
+      }
+
+      // 3. 尿毒症酸中毒（CrCl<15触发）
+      if (isSevereKidney) {
+        txItems.push({ title: '高AG代谢性酸中毒 - 尿毒症', steps: [
+          { n: '01', content: '<strong>根本治疗：肾脏替代治疗（RRT）</strong>' },
+          { n: '02', content: 'RRT指征（之一）：pH<7.15 或 HCO3<10 且无其他可纠正原因' },
+          { n: '03', content: '临时桥接：5% NaHCO3（目标HCO3>15），但不改变长期预后' },
+          { n: '04', content: 'KDIGO 2024：慢性CKD代谢性酸中毒（HCO3<22）长期口服NaHCO3可延缓肾功能下降' }
+        ]});
+      }
+
+      // 4. 通用高AG（乳酸/DKA/尿毒症均未触发时的兜底）
+      if (!(lactate && lactate >= 2) && !isDKA && !isSevereKidney) {
+        txItems.push({ title: '高AG代谢性酸中毒 - 病因待查', steps: [
+          { n: '01', content: '高AG原因：乳酸（L）/ 酮体（K）/ 尿毒症（U）/ 中毒（T）- LKUT' },
+          { n: '02', content: '查：血乳酸、尿酮/血酮、肾功能、血渗透压（怀疑中毒时查渗透压间隙）' },
+          { n: '03', content: '中毒筛查（高AG + 渗透压间隙>10）：甲醇/乙二醇/丙二醇 -> 解毒剂+血液透析' },
+          bicarbStep()
+        ]});
+      }
+
+    } else {
+      // ── 正常AG代谢性酸中毒 ──────────────────────────────────────────────
+      const clRatio = cl && na ? (cl / na) : null;
+      const isHyperCl = clRatio && clRatio > 0.79;
+      txItems.push({ title: '正常AG代谢性酸中毒', steps: [
+        { n: '01', content: '常见原因：腹泻/小肠瘘（HCO3丢失）、肾小管酸中毒（RTA）、高氯血症（大量生理盐水）' },
+        { n: '02', content: isHyperCl
+            ? `<span class="warn-text">Cl/Na比值 ${clRatio.toFixed(2)} > 0.79 -> 提示高氯血症性酸中毒：换用平衡液（乳酸林格/PlasmaLyte）替代0.9%NS</span>`
+            : '查尿AG（Na+K-Cl）：尿AG为负->腹泻（肠道HCO3丢失）；尿AG为正->RTA' },
+        { n: '03', content: 'HCO3严重丢失（腹泻/引流）：口服/静脉NaHCO3补充，目标HCO3>15 mmol/L' }
+      ]});
+    }
+  }
+
+  if (isMetAlk) {
+    const nsVol = wt && cl ? Math.round(0.2 * wt * Math.max(0, 103 - cl)) : null;
+    txItems.push({ title: '代谢性碱中毒处理', steps: [
+      { n: '01', content: '<strong>第一步：查诱因</strong> - 胃液丢失（NGT/呕吐）？利尿剂？低血容量？低钾？' },
+      { n: '02', content: '<strong>氯敏感型（最常见，诱因明确）</strong>' +
+        (nsVol ? `<br>补Cl目标：0.9%NS <span class="dose">${nsVol} ml</span>（0.2×体重×(103−实测Cl)）` : '<br>所需NS(ml) = 0.2 × 体重 × (103 − 实测Cl)') +
+        '<br>同步纠正低钾（碱中毒和低钾互相加重）' },
+      { n: '03', content: isVentilated
+          ? '<strong>机械通气患者</strong>：考虑乙酰唑胺250-500mg IV bid（抑制肾小管HCO3重吸收，可缩短机械通气时间）'
+          : '自主呼吸患者：处理诱因为主，严重时（pH>7.55）可口服乙酰唑胺' },
+      { n: '04', content: '<span class="warn-text">无明确氯敏感诱因</span> -> 氯抵抗型：排查原发性醛固酮增多症（高血压+低钾）、Bartter/Gitelman综合征' },
+      { n: '05', content: 'pH>7.65：死亡率高达80%，紧急处理，必要时稀盐酸（0.1N HCl）经中心静脉缓慢滴入' }
+    ]});
+  }
+
+  if (isRespAcid) {
+    txItems.push({ title: '呼吸性酸中毒处理', steps: [
+      { n: '01', content: isVentilated
+          ? '<strong>机械通气</strong>：增加呼吸频率（优先）或适当增加潮气量（注意平台压<30），ARDS患者允许性高碳酸血症可接受PCO2 50-70（pH>7.20）'
+          : '<strong>未插管</strong>：HFNC/NIV首选；意识改变/呼吸肌疲劳/pH<7.25 -> 插管' },
+      { n: '02', content: '检查镇痛镇静深度（芬太尼/丙泊酚过深可抑制呼吸驱动）、气道分泌物、支气管痉挛' },
+      { n: '03', content: '<span class="warn-text">慢性呼酸（COPD基础）：勿快速纠正PCO2，肾脏代偿HCO3升高是保护性机制，PCO2目标为患者基线值而非40</span>' }
+    ]});
+  }
+
+  if (isRespAlk) {
+    txItems.push({ title: '呼吸性碱中毒处理', steps: [
+      { n: '01', content: isVentilated
+          ? '<strong>机械通气</strong>：降低呼吸频率（首选）或减小潮气量；检查是否人机对抗导致过度通气'
+          : '<strong>自主呼吸</strong>：处理诱因（疼痛->镇痛，发热->退热，低氧->吸氧，焦虑->镇静）' },
+      { n: '02', content: '碱血症使离子钙与白蛋白结合增加 -> 有效离子钙下降（手足抽搐/QT延长），需监测iCa' },
+      { n: '03', content: '注意：呼碱合并低磷常见（碱中毒促进磷酸盐转移入细胞），查血磷' }
+    ]});
+  }
+
+  if (txItems.length > 0) {
+    sections.push({ title: '酸碱处理建议', icon: 'warn', items: [], treatments: txItems });
+  }
+
+  // ── 4. ELECTROLYTES ────────────────────────────────────────────────────────
+  const eItems = [];
+  const eTx = [];
+
+  // ── K ──────────────────────────────────────────────────────────────────────
+  if (k !== null) {
+    const dkaKNote = isDKA && k < 3.3
+      ? '<br><span class="danger-text">[!] DKA：K<3.3禁用胰岛素，先补钾至K>=3.3</span>' : '';
+    const ckdKNote = isSevereKidney
+      ? '<br><span class="danger-text">CrCl<15（KDIGO G5）：补钾极谨慎，每次补后30min复查，防高钾</span>'
+      : isStage4
+      ? '<br><span class="danger-text">CrCl 15-29（KDIGO G4）：补钾需大幅减量，1-2h复查</span>'
+      : ckdAdjust
+      ? '<br><span class="warn-text">CrCl 30-59（KDIGO G3）：补钾速度减半，复查血钾</span>' : '';
+    const sevKidNote = ckdKNote;
+
+    if (k < 2.6) {
+      eItems.push({ type: 'danger', label: 'K', name: `K ${k} mmol/L -> 重度低钾`, detail: '室性心律失常/呼吸肌麻痹风险，持续ECG监护' + (isSevereKidney ? '｜[!] CrCl<15(G5)：补钾极谨慎' : isStage4 ? '｜[!] CrCl 15-29(G4)：需大幅减量' : ckdAdjust ? '｜CrCl 30-59(G3)：速度减半' : '') });
+      eTx.push({ title: '低钾处理 - 重度（K<2.6）', steps: [
+        { n: '01', content: `<strong>中心静脉</strong>：KCl <span class="dose">7.5g（约100 mEq）</span>静脉输注，持续ECG监护${dkaKNote}${ckdKNote}${sevKidNote}` },
+        { n: '02', content: '每20 mEq KCl预期升钾约0.25 mmol/L（Vanderbilt ICU方案）' },
+        { n: '03', content: '1-2h复查血钾，目标K>=4.0 mmol/L' },
+        { n: '04', content: '同步排查低镁（低镁是顽固低钾最常见原因，先补镁再补钾）' }
+      ]});
+    } else if (k < 3.0) {
+      eItems.push({ type: 'danger', label: 'K', name: `K ${k} mmol/L -> 中重度低钾`, detail: 'ECG监护，中心静脉补钾' + (isSevereKidney ? '｜[!] CrCl<15(G5)：补钾极谨慎' : isStage4 ? '｜[!] CrCl 15-29(G4)：需大幅减量' : ckdAdjust ? '｜CrCl 30-59(G3)：速度减半' : '') });
+      eTx.push({ title: '低钾处理 - 中重度（K 2.6-3.0）', steps: [
+        { n: '01', content: `中心静脉优先：KCl <span class="dose">6g（约80 mEq）</span>静脉输注${ckdKNote}${sevKidNote}` },
+        { n: '02', content: '2-4h后复查血钾，目标K>=4.0 mmol/L' },
+        { n: '03', content: '胃肠道可耐受者可同步口服KCl 1.5g' },
+        { n: '04', content: '同步排查低镁' + dkaKNote }
+      ]});
+    } else if (k < 3.3) {
+      eItems.push({ type: 'warn', label: 'K', name: `K ${k} mmol/L -> 中度低钾`, detail: '静脉或口服补钾' + (isSevereKidney ? '｜[!] CrCl<15(G5)：补钾极谨慎' : isStage4 ? '｜[!] CrCl 15-29(G4)：需大幅减量' : ckdAdjust ? '｜CrCl 30-59(G3)：速度减半' : '') });
+      eTx.push({ title: '低钾处理 - 中度（K 3.0-3.3）', steps: [
+        { n: '01', content: `<strong>静脉优先</strong>：KCl <span class="dose">1.5g（约20 mEq）</span>× 3次，间隔2-4h；胃肠道耐受者可改口服/鼻饲${ckdKNote}` },
+        { n: '02', content: '次日复查' + dkaKNote },
+        { n: '03', content: '合并代谢性酸中毒（腹泻/RTA）：枸橼酸钾替代KCl，兼顾纠酸' }
+      ]});
+    } else if (k < 3.9) {
+      eItems.push({ type: 'info', label: 'K', name: `K ${k} mmol/L -> ICU预警`, detail: 'K在正常范围但低于ICU目标（>=4.0）。建议口服/鼻饲KCl 3g（分2次），次晨复查' + (isSevereKidney ? '｜[!] CrCl<15(G5)：补钾极谨慎' : isStage4 ? '｜[!] CrCl 15-29(G4)：酌情减量，复查' : ckdAdjust ? '｜CrCl 30-59(G3)：酌情减量' : '') });
+      eTx.push({ title: '低钾处理 - ICU预警（K 3.3-3.9）', steps: [
+        { n: '01', content: `口服/鼻饲KCl <span class="dose">3g（约40 mEq）</span>，分2次服用` + (isSevereKidney ? '<br><span class="danger-text">[!] CrCl<15(G5)：补钾极谨慎，每次补后30min复查，防高钾反弹</span>' : isStage4 ? '<br><span class="danger-text">[!] CrCl 15-29(G4)：减量至1.5g，1-2h复查</span>' : ckdAdjust ? '<br><span class="warn-text">CrCl 30-59(G3)：可减量至1.5g，次晨复查</span>' : '') },
+        { n: '02', content: '合并代谢性酸中毒：枸橼酸钾替代KCl' },
+        { n: '03', content: '次晨复查，ICU目标K>=4.0 mmol/L（留缓冲，防持续丢失跌破3.5）' }
+      ]});
+    } else if (k > 6.5) {
+      const glucoseNote = gluc && gluc > 14
+        ? '当前血糖>14：<strong>单用胰岛素5U IV，不加葡萄糖</strong>（避免高渗加重高钾）'
+        : '胰岛素 <span class="dose">5U IV</span>（研究显示5U与10U降钾等效，低血糖风险更低）+ 50%葡萄糖 <span class="dose">50ml IV</span>；血糖监测至少6h';
+      eItems.push({ type: 'danger', label: 'K', name: `K ${k} mmol/L -> 重度高钾`, detail: '致命性心律失常风险，立即ECG，三步紧急处理' });
+      eTx.push({ title: '高钾处理 - 紧急三步法（K>6.5，UCSF方案）', steps: [
+        { n: '01', content: '<strong>第一步：稳定心肌膜</strong>（有ECG改变立即给，无ECG改变也建议给）<br>葡萄糖酸钙 <span class="dose">1-2g（10%，10-20ml）IV</span>，5-10min静推；起效3-5min，持续30-60min；休克患者改用氯化钙1g（效价更强，但需中心静脉）' },
+        { n: '02', content: '<strong>第二步：转移K入细胞（15-60min起效）</strong><br>' + glucoseNote + '<br>可联合沙丁胺醇雾化10-20mg（额外降钾0.5-1.0 mmol/L，与胰岛素有协同效应）' },
+        { n: '03', content: '<strong>第三步：排出K（根本治疗）</strong><br>肾功正常：袢利尿剂 呋塞米40-80mg IV促肾排钾<br>口服SZC（sodium zirconium cyclosilicate）10g tid，1h起效，优于Kayexalate<br>' + (isSevereKidney ? '<span class="danger-text">CrCl<15/无尿：以上排钾无效 -> 紧急RRT</span>' : '') },
+        { n: '04', content: '<span class="warn-text">注意：胰岛素/葡萄糖/沙丁胺醇均为临时转移措施，2-6h后K会反弹，必须同时启动排钾方案</span>' },
+        { n: '05', content: '停用升钾药物：ACEI/ARB、保钾利尿剂、肝素、NSAIDs、TMP-SMX' }
+      ]});
+    } else if (k > 5.5) {
+      eItems.push({ type: 'warn', label: 'K', name: `K ${k} mmol/L -> 高钾`, detail: '查ECG，停升钾药，评估排钾' });
+      eTx.push({ title: '高钾处理 - 中度（K 5.5-6.5）', steps: [
+        { n: '01', content: '<strong>立即查ECG</strong>：有T波高尖/QRS增宽 -> 按重度高钾紧急处理' },
+        { n: '02', content: '停用升钾药物：ACEI/ARB、保钾利尿剂（螺内酯/氨苯蝶啶）、肝素、NSAIDs' },
+        { n: '03', content: '饮食：限钾<2g/d，避免香蕉/橙子/番茄/坚果等高钾食物' },
+        { n: '04', content: isSevereKidney
+          ? '<span class="danger-text">CrCl<15：肾脏排钾能力极差，考虑口服SZC 10g tid或提前评估RRT指征</span>'
+          : '肾功正常：增加液体入量促肾排钾；袢利尿剂（呋塞米）可辅助' },
+        { n: '05', content: '2-4h后复查血钾，若持续升高或出现ECG改变立即升级处理' }
+      ]});
+    }
+  }
+
+  // ── Na ─────────────────────────────────────────────────────────────────────
+  if (na !== null) {
+
+    // ── 低钠 ────────────────────────────────────────────────────────────────
+    if (na < 125) {
+      eItems.push({ type: 'danger', label: 'Na', name: `Na ${na} mmol/L -> 重度低钠`, detail: '脑水肿/癫痫/意识改变风险' });
+      eTx.push({ title: '重度低钠处理（Na<125）', steps: [
+        { n: '01', content: '<strong>第一步：判断有无急性症状</strong><br>有症状（癫痫/昏迷/呼吸衰竭）-> 3%高渗盐水 <span class="dose">150ml</span> 静推20min，可重复2次，目标第1小时Na升幅4-6 mmol/L，症状改善即停<br>无症状 -> 进入容量评估流程' },
+        { n: '02', content: '<strong>第二步：容量评估（决定处理方向）</strong><br><strong>①低血容量</strong>（皮肤弹性差/心率快/尿少/有呕吐腹泻病史）<br>-> 0.9%NS补容；注意：补液后ADH受抑可能自发快速纠钠，警惕过冲<br><br><strong>②等容量/SIADH</strong>（无水肿/无脱水/常见于肺炎/颅内病变/药物）<br>-> 限水800-1000ml/d（一线，但有效率约44%）；无效时考虑口服尿素或小剂量袢利尿剂+高盐饮食<br>注意：此类患者给0.9%NS反而加重低钠（肾脏排Na留水）<br><br><strong>③高血容量</strong>（水肿/腹水/心衰/肝硬化/肾病综合征）<br>-> 限水+利尿，治疗原发病；禁止补钠' },
+        { n: '03', content: '<span class="danger-text">纠正速度上限：24h内Na升幅<=10-12 mmol/L（预防渗透性脱髓鞘ODS）<br>高危因素（酒精/营养不良/低钾/Na<105/肝病）：<=8 mmol/L/24h</span>' },
+        { n: '04', content: 'Vaptans（托伐普坦）ICU中<strong>不推荐</strong>（纠正速度不可控，过冲风险高）' },
+        { n: '05', content: '<strong>DDAVP clamp（纠正过快时补救）</strong>：去氨加压素 <span class="dose">2μg IV</span>，锁定肾脏排水，防止Na过冲；每1-2h监测血钠' }
+      ]});
+    } else if (na < 130) {
+      eItems.push({ type: 'warn', label: 'Na', name: `Na ${na} mmol/L -> 中度低钠`, detail: '评估容量状态，三分支处理' });
+      eTx.push({ title: '中度低钠处理（Na 125-130）', steps: [
+        { n: '01', content: '<strong>第一步：容量评估，决定处理方向</strong>' },
+        { n: '02', content: '<strong>①低血容量性</strong>（呕吐/腹泻/利尿剂/出血）<br>-> 0.9%NS补容，容量恢复后ADH受抑，Na自行回升<br><span class="warn-text">警惕：补液后自发性快速纠钠，需每2-4h监测，一旦上升过快及时给D5W或DDAVP brake</span>' },
+        { n: '03', content: '<strong>②等容量性/SIADH</strong>（最常见，肺炎/中枢病变/药物/肿瘤相关）<br>-> 限水800-1000ml/d（一线，约44%有效）<br>-> 限水无效（2-3天无改善）：口服尿素15-30g/d；或袢利尿剂（呋塞米20-40mg）+ 口服NaCl补充<br>-> 禁止给0.9%NS（会加重低钠）' },
+        { n: '04', content: '<strong>③高血容量性</strong>（心衰/肝硬化/肾病综合征）<br>-> 严格限水（500-800ml/d）+ 袢利尿剂；治疗原发病（心衰优化/肝硬化抗醛固酮）<br>-> 补钠无效且有害' },
+        { n: '05', content: '<span class="danger-text">纠正速度上限：24h内Na升幅<=10-12 mmol/L</span><br>每4-6h监测血钠，动态调整' }
+      ]});
+    } else if (na < 135) {
+      eItems.push({ type: 'borderline', label: 'Na', name: `Na ${na} mmol/L -> 轻度低钠`, detail: '通常无需紧急处理，查原因（利尿剂/SIADH/心衰），评估容量状态' });
+    }
+
+    // ── 高钠 ────────────────────────────────────────────────────────────────
+    else if (na > 155) {
+      const fwd = wt ? (0.6 * wt * (na / 140 - 1)).toFixed(1) : '-';
+      eItems.push({ type: 'danger', label: 'Na', name: `Na ${na} mmol/L -> 重度高钠`, detail: '细胞脱水/神经系统损害/谵妄风险' });
+      eTx.push({ title: '重度高钠处理（Na>155）', steps: [
+        { n: '01', content: `自由水缺乏量 = 0.6 × 体重 × (Na/140 - 1)${wt ? ' = <span class="dose">' + fwd + ' L</span>' : '（需填入体重计算）'}<br>实际补水量 = 缺乏量 + 持续丢失量（不显性失水约1L/d，尿崩者另计）` },
+        { n: '02', content: '<strong>有休克/低血容量</strong>：先0.9%NS恢复血流动力学，再换低渗液补自由水<br><strong>无休克</strong>：直接补自由水（首选肠内，不能肠内则D5W静脉）' },
+        { n: '03', content: '<strong>纠正速度</strong><br>慢性/病程不明（>48h，ICU获得性高钠通常属此类）：速度<strong><=0.5 mmol/L/h，<=12 mmol/L/24h</strong>，在48-72h内纠正<br>急性（<48h，如大量高渗液输入）：可适当加快，第1小时允许1-2 mmol/L/h' },
+        { n: '04', content: '每4-6h监测血钠，根据实测值动态调整补液速度<br><span class="warn-text">纠正过快 -> 脑水肿/癫痫；纠正过慢 -> 持续神经损害，两者均增加死亡率</span>' }
+      ]});
+    } else if (na > 150) {
+      const fwd2 = wt ? (0.6 * wt * (na / 140 - 1)).toFixed(1) : '-';
+      eItems.push({ type: 'warn', label: 'Na', name: `Na ${na} mmol/L -> 中度高钠`, detail: '启动补水方案，监测速度' });
+      eTx.push({ title: '中度高钠处理（Na 150-155）', steps: [
+        { n: '01', content: `自由水缺乏量${wt ? ' = <span class="dose">' + fwd2 + ' L</span>' : '（需填入体重）'}，加上持续丢失量，分48h补完` },
+        { n: '02', content: '补液方式：肠内自由水优先（鼻饲）；静脉选D5W或0.45%盐水' },
+        { n: '03', content: '速度：<=0.5 mmol/L/h，<=12 mmol/L/24h；每6-8h监测血钠' },
+        { n: '04', content: '查原因：尿崩症（多尿+低比重尿）/不显性失水过多/高渗补液' }
+      ]});
+    } else if (na > 145) {
+      eItems.push({ type: 'borderline', label: 'Na', name: `Na ${na} mmol/L -> 轻度高钠`, detail: '增加自由水摄入（肠内优先）；查原因（发热/尿崩/不显性失水增加/高渗液输入）' });
+    }
+  }
+
+
+  // ── Ca ─────────────────────────────────────────────────────────────────────
+  if (ca !== null) {
+    if (ca < 0.9) {
+      eItems.push({ type: 'danger', label: 'Ca', name: `iCa ${ca} -> 重度低钙`, detail: '手足抽搐/QT延长/心律失常/低血压' });
+      eTx.push({ title: '低钙血症处理 - 重度', steps: [
+        { n: '01', content: '氯化钙 <span class="dose">1g（10%，10ml）</span>溶于100ml NS，10min以上缓慢静推，升钙约0.5 mmol/L（严重/有症状首选）' },
+        { n: '02', content: '或葡萄糖酸钙 1g IV（升钙幅度较小约0.2 mmol/L，刺激性小，外周静脉可用）' },
+        { n: '03', content: '30min后复查iCa，目标>=1.0 mmol/L；持续低钙需排查低镁（低镁抑制PTH分泌是难治性低钙最常见原因）' }
+      ]});
+    } else if (ca < 1.15) {
+      eItems.push({ type: 'warn', label: 'Ca', name: `iCa ${ca} -> 低钙`, detail: '' });
+      eTx.push({ title: '低钙血症处理 - 轻中度', steps: [
+        { n: '01', content: '葡萄糖酸钙 1g IV缓慢给予，或口服钙剂' },
+        { n: '02', content: '排查低镁、低维生素D、甲状旁腺功能减退、大量输血（枸橼酸螯合钙）' }
+      ]});
+    } else if (ca > 1.45) {
+      eItems.push({ type: 'warn', label: 'Ca', name: `iCa ${ca} -> 高钙`, detail: '查原发病（恶性肿瘤/PTH(up)/维生素D中毒）' });
+    }
+  }
+
+  if (eItems.length > 0 || eTx.length > 0) {
+    sections.push({ title: '电解质异常', icon: 'warn', items: eItems, treatments: eTx });
+  }
+
+  // ── 5. GLUCOSE ────────────────────────────────────────────────────────────
+  if (gluc !== null) {
+    const gItems = [];
+    const gTx = [];
+    if (gluc > 10) {
+      gItems.push({ type: 'warn', label: 'GLU', name: `血糖 ${gluc} mmol/L -> 高血糖`, detail: 'ICU目标血糖：7.8-10.0 mmol/L（SSC/ADA指南）' });
+      gTx.push({ title: '高血糖处理', steps: [
+        { n: '01', content: '启动胰岛素输注：普通胰岛素静脉泵入，目标血糖<strong>7.8-10.0 mmol/L</strong>（SSC 2021）' },
+        { n: '02', content: '初始剂量参考：血糖10-14 mmol/L -> 0.02-0.05 U/kg/h；>14 mmol/L -> 0.05-0.1 U/kg/h' },
+        { n: '03', content: '每1-2h监测血糖，避免低血糖（<4.4 mmol/L）；目标不要低于7.8，过度控糖增加死亡率' },
+        { n: '04', content: gluc > 14
+            ? '<span class="warn-text">血糖>14：排查DKA（查酮体/血气AG）、高渗高血糖综合征（HHS）</span>'
+            : '常见原因：应激性高血糖、糖皮质激素、肠外营养、感染' }
+      ]});
+    } else if (gluc > 7.8) {
+      gItems.push({ type: 'borderline', label: 'GLU', name: `血糖 ${gluc} mmol/L`, detail: 'ICU目标范围内（7.8-10.0 mmol/L）' });
+    } else if (gluc < 4.4) {
+      gItems.push({ type: 'danger', label: 'GLU', name: `血糖 ${gluc} mmol/L -> 低血糖`, detail: 'ICU低血糖（<4.4 mmol/L），神经损伤风险' });
+      gTx.push({ title: '低血糖处理', steps: [
+        { n: '01', content: '50%葡萄糖 <span class="dose">40-60 ml</span> 静推，或10%葡萄糖250ml快速输注' },
+        { n: '02', content: '15min后复查血糖，目标>6.0 mmol/L' },
+        { n: '03', content: '查原因：胰岛素过量、肾功能不全（胰岛素清除减少）、感染性休克' },
+        { n: '04', content: '调整胰岛素方案，避免再次低血糖' }
+      ]});
+    } else if (gluc < 6.1) {
+      gItems.push({ type: 'normal', label: 'GLU', name: `血糖 ${gluc} mmol/L`, detail: '正常' });
+    }
+    if (gItems.length > 0) {
+      sections.push({ title: '血糖', icon: gluc > 10 ? 'warn' : gluc < 4.4 ? 'danger' : 'normal', items: gItems, treatments: gTx });
+    }
+  }
+
+  // ── 6. LACTATE ─────────────────────────────────────────────────────────────
+  if (lactate !== null) {
+    let lacClass = 'normal', lacGrade = '', lacSteps = [];
+    if (lactate < 2) {
+      lacClass = 'normal'; lacGrade = '正常';
+    } else if (lactate < 4) {
+      lacClass = 'warn'; lacGrade = '轻中度升高（2-4 mmol/L）- 组织低灌注预警';
+      lacSteps = [
+        { n: '01', content: '目标：2小时内乳酸清除率>=10%（最强存活预测指标）' },
+        { n: '02', content: '改善氧输送：液体复苏 + 维持MAP>=65 mmHg' },
+        { n: '03', content: '排查药物性乳酸升高（肾上腺素/丙泊酚/二甲双胍）' },
+        { n: '04', content: '2h后复测乳酸评估清除率' }
+      ];
+    } else {
+      lacClass = 'danger'; lacGrade = '重度升高（>4 mmol/L）- 脓毒性休克标准/高死亡率';
+      lacSteps = [
+        { n: '01', content: '<strong>立即启动脓毒症Sepsis-3 bundle</strong>' },
+        { n: '02', content: '1h内：血培养 -> 广谱抗生素 -> 晶体液30ml/kg（3h内）' },
+        { n: '03', content: '去甲肾上腺素维持MAP>=65 mmHg（一线升压药）' },
+        { n: '04', content: '目标：乳酸每2h下降>=10%，复查直至<2 mmol/L' },
+        { n: '05', content: '<span class="warn-text">[!] 注意：持续乳酸升高可能为肝脏清除障碍（肝衰竭），而非持续低灌注，需结合临床判断</span>' }
+      ];
+    }
+
+    const lacPct = Math.min(lactate / 8 * 100, 100);
+    const lacColor = lacClass === 'danger' ? '#ff3b5c' : lacClass === 'warn' ? '#ff9500' : '#00ff9d';
+
+    const lacSection = {
+      title: '乳酸评估', icon: lacClass,
+      items: [{ type: lacClass, label: 'LAC', name: `Lactate ${lactate} mmol/L -> ${lacGrade}`, detail: '' }],
+      extra: `<div class="lactate-bar"><div class="lactate-fill" style="width:${lacPct}%;background:${lacColor}"></div></div>`,
+      treatments: lacSteps.length ? [{ title: '乳酸处理', steps: lacSteps }] : []
+    };
+    sections.push(lacSection);
+  }
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  renderResults(sections);
+}
+
+// ── 粘贴文字解析 ────────────────────────────────────────────────────────────
+function parsePaste() {
+  const raw = document.getElementById('pasteBox').value;
+  if (!raw.trim()) { alert('请先粘贴血气报告文字'); return; }
+
+  // 统一清理：把br标签、HTML实体、多余空格都转成普通空格或换行
+  const text = raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/(\d) (\d)/g, '$1.$2');
+
+
+  const fieldMap = [
+    { patterns: ['酸碱度'],       id: 'pH' },
+    { patterns: ['二氧化碳分压'], id: 'PaCO2' },
+    { patterns: ['氧分压'],       id: 'PaO2' },
+    { patterns: ['实际碳酸'],     id: 'HCO3' },
+    { patterns: ['标准剩余碱'],   id: 'BE' },
+    { patterns: ['实际剩余碱'],   id: 'BE_abe' },
+    { patterns: ['吸入氧浓度'],   id: 'FiO2' },
+    { patterns: ['乳酸'],         id: 'Lactate' },
+    { patterns: ['血红蛋白'],     id: 'Hb' },
+    { patterns: ['氧饱和度'],     id: 'SaO2' },
+    { patterns: ['碳氧血红蛋'], id: 'COHb' },   // 容忍OCR把白识别成日
+    { patterns: ['高铁血红蛋'], id: 'MetHb' },   // 容忍OCR把白识别成日
+    { patterns: ['离子钠'],       id: 'Na' },
+    { patterns: ['离子钾'],       id: 'K' },
+    { patterns: ['离子氯'],       id: 'Cl' },
+    { patterns: ['离子钙'],       id: 'Ca' },
+    { patterns: ['血糖'],         id: 'Glucose' },
+    { patterns: ['白蛋白'],       id: 'Albumin' },
+  ];
+
+  const excludePatterns = ['标准碳酸', '阴离子间隙', '血氧总量', '红细胞压积', '二氧化碳总量', '项目名', '结果'];
+
+  function isRefRange(s) {
+    return /^-?\d+\.?\d*[-~]-?\+?\d+\.?\d*$/.test(s.trim());
+  }
+
+  function findNextNumber(startPos) {
+    const chunk = text.slice(startPos, startPos + 80);
+    const matches = [...chunk.matchAll(/-?\d+\.?\d*/g)];
+    for (const m of matches) {
+      const val = parseFloat(m[0]);
+      const around = chunk.slice(Math.max(0, m.index - 1), m.index + m[0].length + 5).trim();
+      if (isRefRange(around)) continue;
+      if (/^\d{4}$/.test(m[0]) && val > 1900) continue;
+      return val;
+    }
+    return null;
+  }
+
+  const filled_ids = {};
+  let filled = 0;
+
+  for (const field of fieldMap) {
+    for (const pat of field.patterns) {
+      const idx = text.indexOf(pat);
+      if (idx === -1) continue;
+      // 只检查当前字段名行本身是否是需要排除的字段
+      const lineStart = text.lastIndexOf('\n', idx) + 1;
+      const lineEnd = text.indexOf('\n', idx);
+      const currentLine = text.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+      if (excludePatterns.some(ep => currentLine.includes(ep))) continue;
+      const val = findNextNumber(idx + pat.length);
+      if (val !== null) {
+        const fid = field.id;
+        if (!(fid in filled_ids)) {
+          const el = document.getElementById(fid);
+          if (el && !el.value) { el.value = val; filled++; }
+          filled_ids[fid] = val;
+        }
+      }
+      break;
+    }
+  }
+
+  // 标准剩余碱优先；无标准剩余碱时用实际剩余碱
+  const beEl = document.getElementById('BE');
+  if (beEl && !beEl.value && 'BE_abe' in filled_ids) {
+    beEl.value = filled_ids['BE_abe'];
+    filled++;
+  }
+
+  const resultEl = document.getElementById('parseResult');
+  resultEl.style.display = 'block';
+  if (filled > 0) {
+    resultEl.style.color = 'var(--accent2)';
+    resultEl.textContent = 'OK 已识别并填入 ' + filled + ' 个字段，请检查后点击开始分析';
+  } else {
+    resultEl.style.color = 'var(--warn)';
+    resultEl.textContent = '未能识别任何字段，请检查粘贴内容格式';
+  }
+}
+
+
+function renderResults(sections) {
+  const container = document.getElementById('results-content');
+  let html = '';
+
+  for (const s of sections) {
+    const iconClass = s.icon || 'info';
+    html += `<div class="result-section">
+      <div class="result-header">
+        <div class="result-icon ${iconClass}"></div>
+        <div class="result-title">${s.title}</div>
+      </div>
+      <div class="result-body">`;
+
+    if (s.extra) html += s.extra;
+
+    if (s.items && s.items.length > 0) {
+      html += '<div class="diagnosis-list">';
+      for (const item of s.items) {
+        html += `<div class="diagnosis-item ${item.type}">
+          <div class="diagnosis-label">${item.label}</div>
+          <div class="diagnosis-content">
+            <div class="diagnosis-name">${item.name}</div>
+            ${item.detail ? `<div class="diagnosis-detail">${item.detail}</div>` : ''}
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    if (s.treatments && s.treatments.length > 0) {
+      if (s.items && s.items.length > 0) html += '<div class="divider"></div>';
+      for (const tx of s.treatments) {
+        html += `<div class="treatment-block">
+          <div class="treatment-title">${tx.title}</div>`;
+        for (const step of tx.steps) {
+          html += `<div class="treatment-step">
+            <div class="step-num">${step.n}</div>
+            <div class="step-content">${step.content}</div>
+          </div>`;
+        }
+        html += '</div>';
+      }
+    }
+
+    html += '</div></div>';
+  }
+
+  container.innerHTML = html;
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+
+  <!-- 文献来源 -->
+  <div style="margin:40px 16px 24px; padding:20px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-family:var(--sans);">
+    <div style="font-size:13px; font-weight:600; color:var(--text-bright); margin-bottom:14px; letter-spacing:0.05em;">参考指南与文献来源</div>
+    <div style="font-size:11px; color:var(--text-dim); line-height:1.9;">
+
+      <div style="margin-bottom:10px; font-weight:600; color:var(--text);">酸碱/血气</div>
+      <div>• Adrogué HJ, Madias NE. Hyponatremia. <em>N Engl J Med</em> 2000;342:1581–9.</div>
+      <div>• Berend K, et al. Physiological Approach to Assessment of Acid-Base Disturbances. <em>N Engl J Med</em> 2014;371:1434–45.</div>
+
+      <div style="margin-top:10px; margin-bottom:10px; font-weight:600; color:var(--text);">ARDS / 氧合</div>
+      <div>• ARDS Definition Task Force. Acute Respiratory Distress Syndrome (Berlin Definition). <em>JAMA</em> 2012;307(23):2526–33.</div>
+      <div>• Papazian L, et al. Use of high-flow nasal cannula oxygenation in ICU adults. <em>Intensive Care Med</em> 2016;42:1336–49.</div>
+      <div>• Oczkowski S, et al. High flow nasal cannula as respiratory support in adults: clinical practice guideline. <em>Intensive Care Med</em> 2021;47:575–86.</div>
+      <div>• Roca O, et al. Predicting success of high-flow nasal cannula in pneumonia patients (ROX index). <em>Intensive Care Med</em> 2019;45:1190–8.</div>
+      <div>• ERS Task Force. Clinical practice guidelines: high-flow nasal cannula in acute respiratory failure. <em>Eur Respir J</em> 2022;59:2101652.</div>
+      <div>• ARDSNet. Ventilation with Lower Tidal Volumes in ALI/ARDS. <em>N Engl J Med</em> 2000;342:1301–8.</div>
+
+      <div style="margin-top:10px; margin-bottom:10px; font-weight:600; color:var(--text);">电解质 / 钾</div>
+      <div>• Vanderbilt University Medical Center. Electrolyte Repletion Guideline (PMG v2024).</div>
+      <div>• Kidney Disease: Improving Global Outcomes (KDIGO). 2024 CKD Clinical Practice Guideline. <em>Kidney Int</em> 2024;105(4S):S117–S314.</div>
+      <div>• Veltri KT, Mason C. Medication-induced hypokalemia. <em>P T</em> 2015;40(3):185–90.</div>
+      <div>• UK Kidney Association. Clinical Practice Guideline: Treatment of Acute Hyperkalaemia in Adults, 2022.</div>
+      <div>• Peacock WF, et al. Sodium zirconium cyclosilicate + insulin/glucose for hyperkalemia (ENERGIZE). <em>Kidney Int Rep</em> 2020.</div>
+      <div>• EMCrit IBCC: Hypokalemia / Hyperkalemia. emcrit.org (accessed 2025).</div>
+
+      <div style="margin-top:10px; margin-bottom:10px; font-weight:600; color:var(--text);">电解质 / 钠</div>
+      <div>• Spasovski G, et al. ESE/ESICM/ERA–EDTA Clinical practice guideline on hyponatraemia. <em>Eur J Endocrinol</em> 2014;170:G1–47.</div>
+      <div>• Sterns RH, et al. Treatment Guidelines for Hyponatremia: Stay the Course. <em>Clin J Am Soc Nephrol</em> 2024;19:129–35.</div>
+      <div>• EMCrit IBCC: Hyponatremia / Hypernatremia. emcrit.org (accessed 2025).</div>
+
+      <div style="margin-top:10px; margin-bottom:10px; font-weight:600; color:var(--text);">血糖 / 感染</div>
+      <div>• Evans L, et al. Surviving Sepsis Campaign Guidelines 2021. <em>Intensive Care Med</em> 2021;47:1181–247. （血糖目标 7.8–10.0 mmol/L）</div>
+
+      <div style="margin-top:10px; margin-bottom:10px; font-weight:600; color:var(--text);">肾功能</div>
+      <div>• KDIGO 2012 AKI Clinical Practice Guideline. <em>Kidney Int Suppl</em> 2012;2:1–138.</div>
+      <div>• VA/DoD Clinical Reference for CKD Medication Management and Dosing, 2025.</div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px solid var(--border); color:var(--text-dim); font-size:10px;">
+        本工具仅供临床参考，不替代医师判断。所有处理建议需结合患者具体情况，参照所在机构操作规范执行。
+      </div>
+    </div>
+  </div>
+
+<div style="margin-top:24px;padding:12px 0 8px;text-align:center;font-size:11px;color:#888;border-top:1px solid #e0e0e0;">Designed by 葱头爸爸 · liamphoenixwayne@outlook.com</div>
+</body>
+</html>
