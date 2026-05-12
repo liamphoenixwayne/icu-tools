@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>导管选择计算器 v1.2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface2: #f8f9fb;
+  --border: #e3e7ee;
+  --text: #1c2333;
+  --text-muted: #5a6478;
+  --text-dim: #9aa3b2;
+  --blue: #2563eb;
+  --blue-bg: #eff6ff;
+  --blue-border: #bfdbfe;
+  --teal: #0d9488;
+  --teal-bg: #f0fdfa;
+  --teal-border: #99f6e4;
+  --amber: #b45309;
+  --amber-bg: #fffbeb;
+  --amber-border: #fde68a;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --red-border: #fecaca;
+  --sans: 'Noto Sans SC', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.65;
+  min-height: 100vh;
+  padding: 24px 16px 72px;
+}
+
+.container { max-width: 740px; margin: 0 auto; }
+
+/* Header */
+.header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.header p  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.ver-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  background: var(--blue-bg);
+  color: var(--blue);
+  border: 1px solid var(--blue-border);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Tabs */
+.tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+.tab-btn {
+  padding: 8px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s;
+}
+.tab-btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.22);
+}
+.tab-btn:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+
+/* Section */
+.section { display: none; }
+.section.active { display: block; }
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .num {
+  width: 18px; height: 18px;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.card-title::after {
+  content: ''; flex: 1;
+  height: 1px; background: var(--border);
+}
+
+/* Form */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.form-row:last-child { margin-bottom: 0; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+/* Radio */
+.radio-group { display: flex; gap: 6px; }
+.radio-btn {
+  flex: 1;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.14s;
+  user-select: none;
+}
+.radio-btn.selected {
+  background: var(--blue-bg);
+  border-color: var(--blue);
+  color: var(--blue);
+  font-weight: 700;
+}
+
+/* Input */
+.input-wrap { position: relative; }
+.input-wrap input {
+  width: 100%;
+  padding: 8px 38px 8px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.14s, background 0.14s;
+  -moz-appearance: textfield;
+}
+.input-wrap input::-webkit-inner-spin-button { opacity: 0.35; }
+.input-wrap input:focus { border-color: var(--blue); background: #fff; }
+.input-wrap .unit {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px; color: var(--text-dim);
+  font-family: var(--mono);
+  pointer-events: none;
+}
+
+/* Hint */
+.hint {
+  padding: 9px 13px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.hint-blue  { background: var(--blue-bg);  color: #1d4ed8; border: 1px solid var(--blue-border); }
+.hint-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+.hint-red   { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-border); }
+.hint-teal  { background: var(--teal-bg);  color: var(--teal);  border: 1px solid var(--teal-border); }
+
+/* Calc button */
+.calc-btn {
+  width: 100%;
+  padding: 11px;
+  background: var(--blue);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.22);
+  transition: opacity 0.14s, transform 0.1s;
+}
+.calc-btn:hover  { opacity: 0.88; }
+.calc-btn:active { transform: scale(0.99); }
+
+/* Result */
+.result-block { display: none; margin-top: 14px; animation: fadeUp 0.22s ease; }
+.result-block.show { display: block; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; } }
+
+.result-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.result-row:last-child { border-bottom: none; }
+.result-row .rl { font-size: 12px; color: var(--text-muted); }
+.result-row .rv { font-family: var(--mono); font-size: 14px; font-weight: 500; text-align: right; }
+.rv-blue  { color: var(--blue); }
+.rv-teal  { color: var(--teal); }
+.rv-plain { color: var(--text); }
+
+/* Rec box */
+.rec-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  margin-top: 12px;
+}
+.rec-box-title {
+  font-size: 10px; font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.rec-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.rec-item:last-child { border-bottom: none; }
+.rec-item .ri-label { font-size: 12px; color: var(--text-muted); }
+
+.badge {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.badge-blue  { background: var(--blue-bg);  color: var(--blue);  border-color: var(--blue-border); }
+.badge-teal  { background: var(--teal-bg);  color: var(--teal);  border-color: var(--teal-border); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+.badge-red   { background: var(--red-bg);   color: var(--red);   border-color: var(--red-border); }
+.badge-gray  { background: var(--surface2); color: var(--text-muted); border-color: var(--border); }
+
+/* ── IV needle cards ── */
+.iv-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+.iv-needle-card {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 10px 12px;
+  text-align: center;
+  position: relative;
+  transition: all 0.15s;
+  background: var(--surface);
+}
+.iv-needle-card .dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  border: 3px solid rgba(0,0,0,0.08);
+}
+.iv-needle-card .nc-g    { font-size: 16px; font-weight: 700; color: var(--text); }
+.iv-needle-card .nc-name { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.iv-needle-card .nc-spec {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  line-height: 1.7;
+}
+.check-circle {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fff;
+  font-weight: 700;
+}
+.iv-needle-card.selected .check-circle { display: flex; }
+.iv-needle-card.unavailable { opacity: 0.32; }
+
+/* Yellow 24G */
+.n-yellow { border-color: #d97706; }
+.n-yellow .dot { background: #fbbf24; }
+.n-yellow.selected { background: #fffbeb; border-color: #d97706; }
+.n-yellow .check-circle { background: #d97706; }
+
+/* Blue 22G */
+.n-blue { border-color: #2563eb; }
+.n-blue .dot { background: #60a5fa; }
+.n-blue.selected { background: #eff6ff; border-color: #2563eb; }
+.n-blue .check-circle { background: #2563eb; }
+
+/* Red 20G */
+.n-red { border-color: #dc2626; }
+.n-red .dot { background: #f87171; }
+.n-red.selected { background: #fef2f2; border-color: #dc2626; }
+.n-red .check-circle { background: #dc2626; }
+
+/* Footer */
+.footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.footer-logo {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.footer-email {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+.footer-ref {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  line-height: 1.8;
+}
+
+@media (max-width: 520px) {
+  .form-row { grid-template-columns: 1fr; }
+  .iv-card-grid { gap: 6px; }
+  .iv-needle-card { padding: 12px 6px 10px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>导管选择计算器</h1>
+      <p>ECMO 管路推荐 · 浅静脉留置针推荐</p>
+    </div>
+    <div class="ver-badge">v 1.2</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('ecmo')">Part 1 · ECMO 管路</button>
+    <button class="tab-btn"        onclick="switchTab('iv')">Part 2 · 浅静脉留置针</button>
+  </div>
+
+  <!-- ══════════ ECMO ══════════ -->
+  <div id="sec-ecmo" class="section active">
+
+    <div class="card">
+      <div class="card-title"><span class="num">1</span>基本信息</div>
+      <div class="form-row">
+        <div class="field">
+          <label>ECMO 模式</label>
+          <div class="radio-group">
+            <div class="radio-btn selected" id="btn-vv" onclick="selEcmo('vv')">VV-ECMO</div>
+            <div class="radio-btn"          id="btn-va" onclick="selEcmo('va')">VA-ECMO</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>性别</label>
+          <div class="radio-group">
+            <div class="radio-btn selected" id="btn-male"   onclick="selGender('male')">男</div>
+            <div class="radio-btn"          id="btn-female" onclick="selGender('female')">女</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>身高</label>
+          <div class="input-wrap">
+            <input type="number" id="height" placeholder="170" min="140" max="220">
+            <span class="unit">cm</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>实际体重（可选）</label>
+          <div class="input-wrap">
+            <input type="number" id="abw" placeholder="—" min="30" max="300">
+            <span class="unit">kg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="num">2</span>超声血管内径</div>
+      <div class="form-row">
+        <div class="field">
+          <label>引流侧血管内径</label>
+          <div class="input-wrap">
+            <input type="number" id="drain-d" placeholder="14.0" min="4" max="30" step="0.1">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="field">
+          <label id="return-lbl">回血侧血管内径</label>
+          <div class="input-wrap">
+            <input type="number" id="return-d" placeholder="8.0" min="3" max="30" step="0.1">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+      </div>
+      <div class="hint hint-blue" id="vessel-hint" style="margin-top:10px;">
+        VV-ECMO：两侧均为静脉，导管外径 ≤ 血管内径 67%
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calcEcmo()">计算推荐方案</button>
+
+    <!-- ECMO Result -->
+    <div class="result-block" id="ecmo-result">
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title"><span class="num" style="background:var(--teal)">✓</span>理想体重 &amp; 目标流量</div>
+        <div class="result-row"><span class="rl">理想体重 IBW（Devine 公式）</span><span class="rv rv-blue"  id="r-ibw">—</span></div>
+        <div class="result-row"><span class="rl">实际体重</span>                    <span class="rv rv-plain" id="r-abw">—</span></div>
+        <div class="result-row"><span class="rl">最低保障流量（50 ml/IBW·kg/min）</span><span class="rv rv-plain" id="r-fmin">—</span></div>
+        <div class="result-row"><span class="rl">目标流量（60 ml/IBW·kg/min）</span>  <span class="rv rv-teal"  id="r-ftgt">—</span></div>
+        <div class="result-row"><span class="rl">最大参考流量（80 ml/IBW·kg/min）</span><span class="rv rv-plain" id="r-fmax">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="num" style="background:var(--teal)">✓</span>管路推荐</div>
+
+        <div class="rec-box">
+          <div class="rec-box-title">引流管 Drainage（静脉端）</div>
+          <div class="rec-item"><span class="ri-label">血管限制（≤67% OD）</span>            <span class="badge badge-gray"  id="r-d-lim">—</span></div>
+          <div class="rec-item"><span class="ri-label">满足目标流量最小型号</span>            <span class="badge badge-blue"  id="r-d-mfr">—</span></div>
+          <div class="rec-item"><span class="ri-label">推荐型号</span>                        <span class="badge badge-teal"  id="r-d-rec">—</span></div>
+          <div class="rec-item"><span class="ri-label">该型号最大可达流量</span>              <span class="badge badge-gray"  id="r-d-mxq">—</span></div>
+        </div>
+
+        <div class="rec-box" style="margin-top:10px;">
+          <div class="rec-box-title" id="ret-title">回血管 Return（静脉端）</div>
+          <div class="rec-item"><span class="ri-label" id="ret-lim-lbl">血管限制（≤67% OD）</span><span class="badge badge-gray"  id="r-r-lim">—</span></div>
+          <div class="rec-item"><span class="ri-label">满足目标流量最小型号</span>            <span class="badge badge-blue"  id="r-r-mfr">—</span></div>
+          <div class="rec-item"><span class="ri-label">推荐型号</span>                        <span class="badge badge-amber" id="r-r-rec">—</span></div>
+          <div class="rec-item"><span class="ri-label">该型号最大可达流量</span>              <span class="badge badge-gray"  id="r-r-mxq">—</span></div>
+        </div>
+
+        <div id="ecmo-warn" class="hint hint-red"  style="display:none; margin-top:10px;"></div>
+        <div id="ecmo-note" class="hint hint-blue" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ IV ══════════ -->
+  <div id="sec-iv" class="section">
+
+    <div class="card">
+      <div class="card-title"><span class="num">1</span>用途选择</div>
+      <div class="field">
+        <label>主要用途</label>
+        <div class="radio-group" style="gap:8px;">
+          <div class="radio-btn selected" id="use-fluid" onclick="selUse('fluid')">普通补液 / 输药</div>
+          <div class="radio-btn"          id="use-blood" onclick="selUse('blood')">快速输血 / 扩容</div>
+          <div class="radio-btn"          id="use-ct"    onclick="selUse('ct')">CT 造影剂注射</div>
+        </div>
+      </div>
+      <div class="hint hint-blue" id="use-hint" style="margin-top:10px;">
+        普通补液：24G 或 22G 均可满足日常输液需求，建议优先选最细型号以减少血管损伤
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="num">2</span>超声血管内径</div>
+      <div class="form-row">
+        <div class="field">
+          <label>浅静脉内径（超声测量）</label>
+          <div class="input-wrap">
+            <input type="number" id="iv-d" placeholder="3.5" min="0.5" max="15" step="0.1">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="field" style="justify-content:flex-end;">
+          <label>&nbsp;</label>
+          <div class="hint hint-blue" style="margin:0; padding:8px 12px; font-size:11px;">
+            留置针外径 ≤ 血管内径 67%
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calcIV()">查询推荐型号</button>
+
+    <!-- IV Result -->
+    <div class="result-block" id="iv-result">
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title"><span class="num" style="background:var(--teal)">✓</span>留置针推荐</div>
+
+        <div class="iv-card-grid">
+          <!-- 24G 黄 -->
+          <div class="iv-needle-card n-yellow" id="card-24">
+            <div class="check-circle">✓</div>
+            <div class="dot"></div>
+            <div class="nc-g">24 G</div>
+            <div class="nc-name">黄色</div>
+            <div class="nc-spec">OD 0.75 mm<br>ID 0.55 mm<br>≤ 25 ml/min</div>
+          </div>
+          <!-- 22G 蓝 -->
+          <div class="iv-needle-card n-blue" id="card-22">
+            <div class="check-circle">✓</div>
+            <div class="dot"></div>
+            <div class="nc-g">22 G</div>
+            <div class="nc-name">蓝色</div>
+            <div class="nc-spec">OD 0.90 mm<br>ID 0.70 mm<br>≤ 36 ml/min</div>
+          </div>
+          <!-- 20G 红 -->
+          <div class="iv-needle-card n-red" id="card-20">
+            <div class="check-circle">✓</div>
+            <div class="dot"></div>
+            <div class="nc-g">20 G</div>
+            <div class="nc-name">红色</div>
+            <div class="nc-spec">OD 1.10 mm<br>ID 0.85 mm<br>≤ 61 ml/min<br>耐高压</div>
+          </div>
+        </div>
+
+        <div class="rec-box" style="margin-top:12px;">
+          <div class="rec-box-title">最终推荐</div>
+          <div class="rec-item"><span class="ri-label">推荐型号</span>          <span class="badge" id="iv-rec-badge">—</span></div>
+          <div class="rec-item"><span class="ri-label">针管外径 / 内径</span>  <span class="badge badge-gray" id="iv-diam">—</span></div>
+          <div class="rec-item"><span class="ri-label">最大流速参考</span>      <span class="badge badge-blue" id="iv-flow">—</span></div>
+          <div class="rec-item"><span class="ri-label">血管占比（OD/内径）</span><span class="badge badge-gray" id="iv-ratio">—</span></div>
+        </div>
+
+        <div id="iv-warn" class="hint hint-red"  style="display:none; margin-top:10px;"></div>
+        <div id="iv-note" class="hint hint-blue" style="margin-top:10px; display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-logo">葱头爸爸出品</div>
+    <div class="footer-email">liamphoenixwayne@outlook.com</div>
+    <div class="footer-ref">
+      参考文献：ELSO Guidelines · Broman 2019 · Wickramarachchi 2025 · Frontiers in Medicine 2022<br>
+      本工具仅供临床参考，最终导管选择请结合患者实际情况及医师判断
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── State ──────────────────────────────────
+let ecmoType = 'vv', gender = 'male', ivUse = 'fluid';
+
+// ── ECMO Cannula Data ───────────────────────
+// Drainage (venous): fr, od(mm), q(L/min max)  [Broman 2019, Wickramarachchi 2025]
+const DRAIN = [
+  { fr:17, od:5.7, q:2.5 },
+  { fr:19, od:6.3, q:3.5 },
+  { fr:21, od:7.0, q:4.5 },
+  { fr:23, od:7.7, q:6.0 },
+  { fr:25, od:8.3, q:8.0 },
+  { fr:29, od:9.7, q:8.5 },
+];
+// VV return (venous)
+const RET_VV = [
+  { fr:19, od:6.3, q:4.0 },
+  { fr:21, od:7.0, q:5.0 },
+  { fr:23, od:7.7, q:6.0 },
+];
+// VA return (arterial)
+const RET_VA = [
+  { fr:13, od:4.3, q:2.5 },
+  { fr:15, od:5.0, q:3.6 },
+  { fr:17, od:5.7, q:4.5 },
+  { fr:19, od:6.3, q:5.0 },
+  { fr:21, od:7.0, q:5.5 },
+];
+
+// ── IV Data (科室三种) ──────────────────────
+const IV = [
+  { g:24, od:0.75, id:0.55, q:25,  label:'黄色 24G', cls:'badge-amber', card:'card-24' },
+  { g:22, od:0.90, id:0.70, q:36,  label:'蓝色 22G', cls:'badge-blue',  card:'card-22' },
+  { g:20, od:1.10, id:0.85, q:61,  label:'红色 20G', cls:'badge-red',   card:'card-20' },
+];
+
+const USE_HINTS = {
+  fluid: '普通补液：24G 或 22G 均可满足日常输液需求，建议优先选最细型号以减少血管损伤',
+  blood: '快速输血 / 扩容：推荐 20G 红色以确保足够流速；22G 蓝色为次选',
+  ct:    'CT 造影剂注射：必须使用 20G 红色（耐高压），其他型号不适用于高压注射',
+};
+
+// ── Tab ────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>
+    b.classList.toggle('active', (i===0&&t==='ecmo')||(i===1&&t==='iv')));
+  document.getElementById('sec-ecmo').classList.toggle('active', t==='ecmo');
+  document.getElementById('sec-iv').classList.toggle('active', t==='iv');
+}
+
+// ── ECMO UI ────────────────────────────────
+function selEcmo(t) {
+  ecmoType = t;
+  document.getElementById('btn-vv').classList.toggle('selected', t==='vv');
+  document.getElementById('btn-va').classList.toggle('selected', t==='va');
+  const va = t==='va';
+  document.getElementById('return-lbl').textContent  = '回血侧血管内径';
+  document.getElementById('vessel-hint').textContent = va
+    ? 'VA-ECMO：引流管（静脉端）≤ 67% OD；回血管（动脉端）≤ 80% OD（严格限制，减少肢端缺血风险）'
+    : 'VV-ECMO：两侧均为静脉，导管外径 ≤ 血管内径 67%';
+  document.getElementById('ret-title').textContent   = va ? '回血管 Arterial Return（动脉端）' : '回血管 Return（静脉端）';
+  document.getElementById('ret-lim-lbl').textContent = va ? '血管限制（≤80% OD）' : '血管限制（≤67% OD）';
+  document.getElementById('ecmo-result').classList.remove('show');
+}
+function selGender(g) {
+  gender = g;
+  document.getElementById('btn-male').classList.toggle('selected', g==='male');
+  document.getElementById('btn-female').classList.toggle('selected', g==='female');
+  document.getElementById('ecmo-result').classList.remove('show');
+}
+
+// ── IV UI ──────────────────────────────────
+function selUse(u) {
+  ivUse = u;
+  ['fluid','blood','ct'].forEach(x=>
+    document.getElementById('use-'+x).classList.toggle('selected', x===u));
+  document.getElementById('use-hint').textContent = USE_HINTS[u];
+  document.getElementById('iv-result').classList.remove('show');
+}
+
+// ── Helpers ─────────────────────────────────
+const f1 = v => v.toFixed(1);
+const f2 = v => v.toFixed(2);
+
+function pickCannula(list, maxOD, targetQ) {
+  const ok = list.filter(c => c.od <= maxOD);
+  if (!ok.length) return null;
+  const capable = ok.filter(c => c.q >= targetQ);
+  return capable.length ? capable[0] : ok[ok.length-1];
+}
+function minFrStr(list, q) {
+  const c = list.find(x => x.q >= q);
+  return c ? c.fr+' Fr' : '>'+list[list.length-1].fr+' Fr（超范围）';
+}
+
+// ── ECMO Calc ──────────────────────────────
+function calcEcmo() {
+  const h   = parseFloat(document.getElementById('height').value);
+  const abwV= parseFloat(document.getElementById('abw').value);
+  const dD  = parseFloat(document.getElementById('drain-d').value);
+  const rD  = parseFloat(document.getElementById('return-d').value);
+
+  if (!h || h<140 || h>220) { alert('请输入有效身高（140–220 cm）'); return; }
+  if (!dD|| dD<4)           { alert('请输入有效引流侧血管内径（≥4 mm）'); return; }
+  if (!rD|| rD<3)           { alert('请输入有效回血侧血管内径（≥3 mm）'); return; }
+
+  // IBW (Devine)
+  const ibw = Math.max((gender==='male'?50:45.5)+2.3*(h-152.4)/2.54, 30);
+
+  // Target flows
+  const fMin = ibw*50/1000, fTgt = ibw*60/1000, fMax = ibw*80/1000;
+
+  // OD limits
+  const DR = 0.67, RR = ecmoType==='va' ? 0.80 : 0.67;
+  const dMaxOD = dD*DR, rMaxOD = rD*RR;
+
+  const retList = ecmoType==='va' ? RET_VA : RET_VV;
+  const dRec = pickCannula(DRAIN,   dMaxOD, fTgt);
+  const rRec = pickCannula(retList, rMaxOD, fTgt);
+
+  // Fill IBW / flows
+  document.getElementById('r-ibw').textContent  = f1(ibw)+' kg';
+  document.getElementById('r-abw').textContent  = isNaN(abwV)?'未输入':f1(abwV)+' kg';
+  document.getElementById('r-fmin').textContent = f1(fMin)+' L/min';
+  document.getElementById('r-ftgt').textContent = f1(fTgt)+' L/min';
+  document.getElementById('r-fmax').textContent = f1(fMax)+' L/min';
+
+  // Drainage
+  document.getElementById('r-d-lim').textContent = '≤ '+f2(dMaxOD)+' mm OD（≈ '+Math.floor(dMaxOD*3)+' Fr）';
+  document.getElementById('r-d-mfr').textContent = minFrStr(DRAIN, fTgt);
+  document.getElementById('r-d-rec').textContent = dRec ? dRec.fr+' Fr' : '无匹配';
+  document.getElementById('r-d-mxq').textContent = dRec ? '≤ '+dRec.q+' L/min' : '—';
+
+  // Return
+  document.getElementById('r-r-lim').textContent = '≤ '+f2(rMaxOD)+' mm OD（≈ '+Math.floor(rMaxOD*3)+' Fr）';
+  document.getElementById('r-r-mfr').textContent = minFrStr(retList, fTgt);
+  document.getElementById('r-r-rec').textContent = rRec ? rRec.fr+' Fr' : '无匹配';
+  document.getElementById('r-r-mxq').textContent = rRec ? '≤ '+rRec.q+' L/min' : '—';
+
+  // Warnings
+  const wEl = document.getElementById('ecmo-warn');
+  const warns = [];
+  if (!dRec) warns.push('引流管：血管内径过小，无合适型号，建议评估对侧或中心插管。');
+  else if (dRec.q < fTgt) warns.push('引流管 '+dRec.fr+'Fr 最大流量（'+dRec.q+' L/min）低于目标流量（'+f1(fTgt)+' L/min），已选血管限制下最大可用型号。');
+  if (!rRec) warns.push('回血管：血管内径过小，无合适型号，建议更换穿刺位置。');
+  else if (rRec.q < fTgt) warns.push('回血管 '+rRec.fr+'Fr 最大流量（'+rRec.q+' L/min）低于目标流量，建议评估更换路径。');
+
+  if (warns.length) { wEl.textContent='⚠ '+warns.join(' '); wEl.style.display='block'; }
+  else              { wEl.style.display='none'; }
+
+  // Note
+  let note = '目标流量范围 '+f1(fMin)+'–'+f1(fMax)+' L/min（IBW '+f1(ibw)+' kg）。';
+  if (ecmoType==='va') note += ' VA-ECMO 建议常规预防性放置远端灌注管（5–6 Fr）防止肢端缺血。';
+  note += ' 最终流量以 SvO₂ 和血流动力学目标动态调整为准。';
+  document.getElementById('ecmo-note').textContent = note;
+
+  document.getElementById('ecmo-result').classList.add('show');
+}
+
+// ── IV Calc ────────────────────────────────
+function calcIV() {
+  const vessel = parseFloat(document.getElementById('iv-d').value);
+  if (!vessel||vessel<0.5) { alert('请输入有效血管内径（≥0.5 mm）'); return; }
+
+  const maxOD = vessel * 0.67;
+
+  // Reset card states
+  IV.forEach(c => {
+    const el = document.getElementById(c.card);
+    el.classList.remove('selected','unavailable');
+  });
+
+  // Eligible = OD fits vessel
+  const eligible = IV.filter(c => c.od <= maxOD);
+
+  // Pick recommendation by use
+  let rec = null;
+  if (ivUse === 'ct') {
+    // Must be 20G red; no fallback
+    rec = eligible.find(c => c.g===20) || null;
+  } else if (ivUse === 'blood') {
+    // Prefer 20G, fallback 22G
+    rec = eligible.find(c=>c.g===20) || eligible.find(c=>c.g===22) || null;
+  } else {
+    // fluid: prefer 22G (not too fine, not overkill); fallback 24G; 20G last
+    rec = eligible.find(c=>c.g===22) || eligible.find(c=>c.g===24) || eligible.find(c=>c.g===20) || null;
+  }
+
+  // Update card visuals
+  IV.forEach(c => {
+    const el = document.getElementById(c.card);
+    if (!eligible.includes(c)) el.classList.add('unavailable');
+    else if (rec && c.g===rec.g) el.classList.add('selected');
+  });
+
+  // Fill result
+  const wEl = document.getElementById('iv-warn');
+  const nEl = document.getElementById('iv-note');
+
+  if (!rec) {
+    document.getElementById('iv-rec-badge').textContent  = '无合适型号';
+    document.getElementById('iv-rec-badge').className    = 'badge badge-red';
+    document.getElementById('iv-diam').textContent       = '—';
+    document.getElementById('iv-flow').textContent       = '—';
+    document.getElementById('iv-ratio').textContent      = '—';
+
+    let msg = ivUse==='ct'
+      ? '⚠ 血管内径 '+vessel+' mm，20G 红色（OD 1.10 mm）超出 67% 限制（≤'+f2(maxOD)+' mm）。该血管不适合高压注射，请选择更粗的血管。'
+      : '⚠ 血管内径 '+vessel+' mm 过细（允许外径 ≤ '+f2(maxOD)+' mm），科室三种型号均不适用，请重新选择穿刺位置。';
+    wEl.textContent = msg; wEl.style.display='block';
+    nEl.style.display='none';
+  } else {
+    document.getElementById('iv-rec-badge').textContent  = rec.label;
+    document.getElementById('iv-rec-badge').className    = 'badge '+rec.cls;
+    document.getElementById('iv-diam').textContent       = 'OD '+rec.od+' mm / ID '+rec.id+' mm';
+    document.getElementById('iv-flow').textContent       = '≤ '+rec.q+' ml/min';
+    document.getElementById('iv-ratio').textContent      = ((rec.od/vessel*100).toFixed(0))+'%（限制 ≤67%）';
+    wEl.style.display='none';
+
+    // Contextual note
+    let note = '';
+    if (ivUse==='ct') {
+      note='造影剂注射请使用 20G 红色耐高压留置针，注射前确认针管通畅及位置良好。';
+    } else if (ivUse==='blood' && rec.g===22) {
+      note='血管条件受限，仅蓝色 22G 可用。快速扩容时流速有限（≤36 ml/min），建议同时开放多条静脉通路或尽快寻找更粗血管。';
+    } else if (ivUse==='blood' && rec.g===20) {
+      note='红色 20G 满足快速输血 / 扩容需求，流速可达 61 ml/min，可耐受一定压力输注。';
+    } else if (ivUse==='fluid' && rec.g===20) {
+      note='仅红色 20G 适合此血管，可正常使用，流速远超日常补液需求。';
+    } else {
+      note=USE_HINTS[ivUse];
+    }
+    nEl.textContent = note; nEl.style.display='block';
+  }
+
+  document.getElementById('iv-result').classList.add('show');
+}
+</script>
+</body>
+</html>

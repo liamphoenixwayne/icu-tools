@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICU 胰岛素滴定计算器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f0f0f0;
+    color: #111;
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .header {
+    background: #111;
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header h1 { font-size: 16px; font-weight: 700; }
+  .header .sub { font-size: 12px; color: #bbb; }
+
+  .main { max-width: 680px; margin: 0 auto; padding: 20px; }
+  .card { background: #fff; border-radius: 8px; padding: 18px; margin-bottom: 16px; border: 1px solid #ddd; }
+
+  .section-label {
+    font-size: 12px; font-weight: 700; color: #111;
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px;
+  }
+
+  /* Patient type */
+  .seg-group { display: flex; border-radius: 6px; overflow: hidden; border: 2px solid #111; }
+  .seg-group input[type=radio] { display: none; }
+  .seg-group label {
+    flex: 1; text-align: center; padding: 12px 10px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: #fff; color: #111;
+    border-right: 2px solid #111;
+    transition: background 0.1s, color 0.1s;
+    user-select: none; line-height: 1.4;
+  }
+  .seg-group label:last-of-type { border-right: none; }
+  .seg-group label small { font-weight: 400; font-size: 11px; display: block; margin-top: 2px; color: #555; }
+  #p-std:checked + label { background: #1a8f4a; color: #fff; }
+  #p-std:checked + label small { color: #c8f0d8; }
+  #p-dm:checked + label { background: #c96800; color: #fff; }
+  #p-dm:checked + label small { color: #ffe0b0; }
+
+  /* Inputs */
+  .inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: #111; margin-bottom: 5px; }
+  .field label .unit { font-weight: 400; color: #555; margin-left: 3px; }
+  .field input[type=number] {
+    width: 100%; background: #fff; border: 2px solid #bbb;
+    border-radius: 6px; color: #111;
+    font-family: 'Courier New', monospace; font-size: 24px; font-weight: 700;
+    padding: 10px 12px; outline: none; transition: border-color 0.1s;
+    -moz-appearance: textfield;
+  }
+  .field input::-webkit-inner-spin-button,
+  .field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .field input:focus { border-color: #111; }
+  .field input::placeholder { color: #ccc; font-size: 16px; font-weight: 400; }
+
+  .calc-btn {
+    width: 100%; margin-top: 14px; padding: 15px;
+    background: #111; border: none; border-radius: 6px;
+    color: #fff; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: background 0.1s;
+  }
+  .calc-btn:hover { background: #333; }
+  .calc-btn:active { background: #000; }
+
+  /* Results */
+  #result { display: none; }
+  #result.show { display: block; animation: fadeIn 0.15s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+  .result-card {
+    border-radius: 8px; padding: 18px 20px;
+    margin-bottom: 12px; border: 2px solid;
+  }
+  .result-card.green  { background: #edfaf3; border-color: #1a8f4a; }
+  .result-card.amber  { background: #fff7ec; border-color: #c96800; }
+  .result-card.red    { background: #fff0f0; border-color: #cc2222; }
+
+  .rc-label { font-size: 11px; font-weight: 700; color: #555; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .rc-action { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 8px; line-height: 1.3; }
+  .rc-detail { font-size: 14px; color: #222; line-height: 1.9; }
+  .rc-detail b { color: #000; }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .info-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 14px 16px; }
+  .info-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .ik { color: #333; }
+  .info-row .iv { font-family: 'Courier New', monospace; font-weight: 700; color: #111; }
+
+  .alert-box {
+    background: #fff0f0; border: 2px solid #cc2222;
+    border-radius: 6px; padding: 12px 16px;
+    font-size: 14px; font-weight: 700; color: #cc2222; margin-bottom: 12px;
+  }
+
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 2px 7px; border-radius: 3px; margin-left: 6px; vertical-align: middle;
+  }
+  .tag-target { background: #d4edda; color: #155724; }
+  .tag-high   { background: #fff3cd; color: #7a5000; }
+  .tag-low    { background: #f8d7da; color: #842029; }
+
+  .footer-note {
+    margin-top: 20px; font-size: 12px; color: #888;
+    line-height: 1.7; border-top: 1px solid #ddd; padding-top: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ICU 胰岛素滴定计算器</h1>
+  <span class="sub">Yale IIP · SCCM 2024</span>
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <div class="section-label">患者类型</div>
+    <div class="seg-group">
+      <input type="radio" name="ptype" id="p-std" value="std" checked>
+      <label for="p-std">普通患者<small>目标 7.8–10.0 mmol/L</small></label>
+      <input type="radio" name="ptype" id="p-dm" value="dm">
+      <label for="p-dm">DM（HbA1c &gt;7%）/ 泼尼松 ≥20 mg/d / 甲泼尼龙 ≥16 mg/d<small>目标 10.0–13.9 mmol/L</small></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">输入数据</div>
+    <div class="inputs-grid">
+      <div class="field">
+        <label>当前血糖 <span class="unit">mmol/L</span></label>
+        <div style="font-size:10px;color:transparent;margin-bottom:5px;margin-top:-3px;">占位</div>
+        <input type="number" id="bg-now" step="0.1" min="0" max="60" placeholder="—">
+      </div>
+      <div class="field">
+        <label>上次血糖 <span class="unit">mmol/L</span></label>
+        <div style="font-size:10px;color:#888;margin-bottom:5px;margin-top:-3px;">首次可不填</div>
+        <input type="number" id="bg-prev" step="0.1" min="0" max="60" placeholder="可选">
+      </div>
+      <div class="field">
+        <label>间隔时间 <span class="unit">小时</span></label>
+        <input type="number" id="interval" step="0.5" min="0.25" max="8" placeholder="2">
+      </div>
+      <div class="field">
+        <label>当前泵速 <span class="unit">u/h</span></label>
+        <input type="number" id="rate" step="0.5" min="0" max="30" placeholder="—">
+      </div>
+    </div>
+    <button class="calc-btn" onclick="calculate()">计算处理方案</button>
+  </div>
+
+  <div id="result"></div>
+
+  <div class="footer-note">
+    参考：Yale IIP (Goldberg 2004) · YNHHS 2020 · SCCM Guidelines 2024 · ADA 2025<br>
+    本工具仅供临床辅助参考，最终决策须结合临床实际由医师判断。离线可用，无数据上传。
+  </div>
+</div>
+
+<script>
+function getDelta(rate) {
+  if (rate < 3)     return 0.5;
+  if (rate <= 6)    return 1.0;
+  if (rate <= 9.5)  return 1.5;
+  if (rate <= 14.5) return 2.0;
+  if (rate <= 19.5) return 3.0;
+  return 4.0;
+}
+function fmt(n) { return n % 1 === 0 ? n.toString() : n.toFixed(1); }
+function round05(n) { return Math.round(n * 2) / 2; }
+
+function calculate() {
+  const ptype    = document.querySelector('input[name=ptype]:checked').value;
+  const bgNow    = parseFloat(document.getElementById('bg-now').value);
+  const bgPrev   = parseFloat(document.getElementById('bg-prev').value);
+  const interval = parseFloat(document.getElementById('interval').value) || 2;
+  const rate     = parseFloat(document.getElementById('rate').value);
+
+  if (isNaN(bgNow) || isNaN(rate)) {
+    show(`<div class="alert-box">请填写当前血糖和当前泵速</div>`);
+    return;
+  }
+
+  // ── 首次启动：泵速为0且无上次血糖 → 表1逻辑 ──────────────────────────────
+  if (rate === 0 && isNaN(bgPrev)) {
+    if (bgNow < 10.0) {
+      show(`<div class="result-card green">
+        <div class="rc-label">首次评估</div>
+        <div class="rc-action">暂不启动胰岛素泵</div>
+        <div class="rc-detail">当前血糖 <b>${fmt(bgNow)} mmol/L</b>，未达启动阈值（≥10.0 mmol/L）<br>15–30 min 后复测</div>
+      </div>`);
+      return;
+    }
+    const initRate = round05(bgNow * 0.18);
+    const initBolus = Math.min(10, initRate);
+    const card = bgNow >= 27.8 ? 'red' : bgNow >= 16.7 ? 'amber' : 'green';
+    const alert = bgNow >= 27.8 ? '<div class="alert-box">血糖 ≥ 27.8 mmol/L，须排除 DKA/HHS，通知医生评估后再启动</div>' : '';
+    show(`${alert}<div class="result-card ${card}">
+      <div class="rc-label">首次启动（表1）</div>
+      <div class="rc-action">起泵 ${fmt(initRate)} u/h，推注 ${fmt(initBolus)} U</div>
+      <div class="rc-detail">
+        计算：${fmt(bgNow)} × 0.18 = ${fmt(round05(bgNow * 0.18))} → 取0.5整数倍<br>
+        初始泵速：<b>${fmt(initRate)} u/h</b><br>
+        单次静推：<b>${fmt(initBolus)} U</b>（最大10U）<br>
+        启动后监测频率：<b>Q2h</b>
+      </div>
+    </div>`);
+    return;
+  }
+
+  const targetLow  = ptype === 'std' ? 7.8  : 10.0;
+  const targetHigh = ptype === 'std' ? 10.0 : 13.9;
+  const ch = isNaN(bgPrev) ? null : (bgNow - bgPrev) / interval;
+  const delta  = getDelta(rate);
+  const delta2 = delta * 2;
+  let html = '';
+
+  if (bgNow < 2.8) {
+    html = `
+      <div class="alert-box">严重低血糖 — 立即处置，通知医生</div>
+      <div class="result-card red">
+        <div class="rc-label">处置方案</div>
+        <div class="rc-action">停泵，立即通知医生</div>
+        <div class="rc-detail">
+          推注 50% GS <b>25 ml</b> IV；30 min 后仍 &lt;2.8 可重复一次<br>
+          Q15 min 复测至 BG ≥ 5.6，再 Q1h，再 Q2h<br>
+          BG ≥ 9.7 后以前速率 30% 重启 → <b>${fmt(round05(rate * 0.3))} u/h</b>
+        </div>
+      </div>`;
+  }
+  else if (bgNow < 4.2) {
+    html = `
+      <div class="result-card red">
+        <div class="rc-label">处置方案</div>
+        <div class="rc-action">停泵，通知医生</div>
+        <div class="rc-detail">
+          推注 50% GS <b>12.5 ml</b> IV<br>
+          Q15 min 复测至 BG ≥ 5.6，再 Q1h，再 Q2h<br>
+          BG ≥ 9.7 后以前速率 40% 重启 → <b>${fmt(round05(rate * 0.4))} u/h</b>
+        </div>
+      </div>`;
+  }
+  else if (bgNow < 5.6) {
+    html = `
+      <div class="result-card amber">
+        <div class="rc-label">处置方案</div>
+        <div class="rc-action">停泵</div>
+        <div class="rc-detail">
+          Q15 min 复测；无症状无需推注葡萄糖<br>
+          Q15 min 至 BG ≥ 5.6，再 Q1h，再 Q2h<br>
+          BG ≥ 9.7 后以前速率 50% 重启 → <b>${fmt(round05(rate * 0.5))} u/h</b>
+        </div>
+      </div>`;
+  }
+  else {
+    let zone, zoneColor;
+    const aboveHigh = ptype === 'std' ? 13.8 : 19.4;
+    if      (bgNow < targetLow)    { zone = 'below';  zoneColor = 'amber'; }
+    else if (bgNow <= targetHigh)  { zone = 'target'; zoneColor = 'green'; }
+    else if (bgNow <= aboveHigh)   { zone = 'above';  zoneColor = 'amber'; }
+    else                           { zone = 'high';   zoneColor = 'red';   }
+
+    const zoneLabel = { below:'低于目标', target:'目标范围', above:'偏高', high:'明显高' }[zone];
+    let action, newRate, monitor;
+
+    if (zone === 'below') {
+      if      (ch === null)   { action = '维持原泵速（首次测量）';                            newRate = rate; }
+      else if (ch > 1.4)      { action = `加 Δ（+${fmt(delta)} u/h）`;                     newRate = rate + delta; }
+      else if (ch >= 0)       { action = '维持原泵速';                                       newRate = rate; }
+      else if (ch >= -1.4)    { action = `减 Δ（−${fmt(delta)} u/h）`;                      newRate = rate - delta; }
+      else                    { action = `暂停 30 min，重启后减 2Δ（−${fmt(delta2)} u/h）`; newRate = rate - delta2; }
+      monitor = 'Q2h';
+    }
+    else if (zone === 'target') {
+      if      (ch === null)   { action = '维持原泵速（首次测量）';                            newRate = rate; }
+      else if (ch > 2.8)      { action = `加 2Δ（+${fmt(delta2)} u/h）`;                   newRate = rate + delta2; }
+      else if (ch > 0)        { action = `加 Δ（+${fmt(delta)} u/h）`;                     newRate = rate + delta; }
+      else if (ch >= -1.4)    { action = '维持原泵速';                                       newRate = rate; }
+      else                    { action = `减 Δ（−${fmt(delta)} u/h）`;                      newRate = rate - delta; }
+      monitor = 'Q2h（稳定 12–24h 且临床无变化可延至 Q4h）';
+    }
+    else if (zone === 'above') {
+      if      (ch === null)   { action = `加 Δ（+${fmt(delta)} u/h）（首次测量，保守起步）`; newRate = rate + delta; }
+      else if (ch > 2.8)      { action = `加 2Δ（+${fmt(delta2)} u/h）`;                   newRate = rate + delta2; }
+      else if (ch >= 0)       { action = `加 Δ（+${fmt(delta)} u/h）`;                     newRate = rate + delta; }
+      else if (ch >= -2.8)    { action = '维持原泵速（血糖下降中）';                          newRate = rate; }
+      else                    { action = `减 Δ（−${fmt(delta)} u/h）`;                      newRate = rate - delta; }
+      monitor = 'Q2h';
+    }
+    else {
+      if      (ch === null)   { action = `加 2Δ（+${fmt(delta2)} u/h），通知医生（首次测量）`; newRate = rate + delta2; }
+      else if (ch >= 0)       { action = `加 2Δ（+${fmt(delta2)} u/h），通知医生`;           newRate = rate + delta2; }
+      else if (ch >= -4.2)    { action = '维持原泵速（血糖下降中）';                           newRate = rate; }
+      else                    { action = `暂停 30 min，重启后减 2Δ（−${fmt(delta2)} u/h）`; newRate = rate - delta2; }
+      monitor = 'Q2h；连续 2 次仍明显高须通知医生';
+    }
+
+    newRate = Math.max(0, round05(newRate));
+    const rateChanged = newRate !== rate;
+    const chStr = ch === null ? '首次测量' : (ch >= 0 ? '+' : '') + ch.toFixed(1) + ' mmol/L/h';
+    const tagCls = zone === 'target' ? 'tag-target' : zone === 'high' ? 'tag-low' : 'tag-high';
+
+    html = `
+      <div class="result-grid">
+        <div class="info-card">
+          <div class="info-row"><span class="ik">当前血糖</span><span class="iv">${fmt(bgNow)} mmol/L <span class="tag ${tagCls}">${zoneLabel}</span></span></div>
+          <div class="info-row"><span class="ik">变化速率</span><span class="iv">${chStr}</span></div>
+          <div class="info-row"><span class="ik">当前泵速</span><span class="iv">${fmt(rate)} u/h</span></div>
+        </div>
+        <div class="info-card">
+          <div class="info-row"><span class="ik">目标范围</span><span class="iv">${targetLow}–${targetHigh} mmol/L</span></div>
+          <div class="info-row"><span class="ik">Δ</span><span class="iv">${fmt(delta)} u/h</span></div>
+          <div class="info-row"><span class="ik">2Δ</span><span class="iv">${fmt(delta2)} u/h</span></div>
+        </div>
+      </div>
+      <div class="result-card ${zoneColor}">
+        <div class="rc-label">调整方案</div>
+        <div class="rc-action">${action}</div>
+        <div class="rc-detail">
+          ${rateChanged ? `新泵速：<b>${fmt(newRate)} u/h</b><br>` : ''}
+          下次监测：<b>${monitor}</b>
+        </div>
+      </div>
+      ${zone === 'high' && rate >= 20 ? '<div class="alert-box">泵速 ≥ 20 u/h 须通知医生；如速率已达上限仍持续高血糖，排除管路故障。</div>' : ''}
+    `;
+  }
+  show(html);
+}
+
+function show(html) {
+  const el = document.getElementById('result');
+  el.innerHTML = html;
+  el.className = 'show';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+</script>
+<div style="margin-top:24px;padding:12px 0 8px;text-align:center;font-size:11px;color:#888;border-top:1px solid #e0e0e0;">Designed by 葱头爸爸 · liamphoenixwayne@outlook.com</div>
+</body>
+</html>
