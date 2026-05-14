@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF 签名工具</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; min-height: 100vh; }
+header { background: #fff; border-bottom: 1px solid #e5e4e0; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+header h1 { font-size: 16px; font-weight: 500; }
+.badge { font-size: 11px; background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+.workspace { display: grid; grid-template-columns: 280px 1fr; height: calc(100vh - 53px); }
+.sidebar { background: #fff; border-right: 1px solid #e5e4e0; display: flex; flex-direction: column; overflow-y: auto; }
+.panel-section { padding: 18px 20px; border-bottom: 1px solid #f0ede8; }
+.panel-section h2 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #888; margin-bottom: 12px; }
+.upload-zone { border: 1.5px dashed #d0cdc8; border-radius: 10px; padding: 18px 12px; text-align: center; cursor: pointer; transition: all .15s; background: #fafaf8; }
+.upload-zone:hover, .upload-zone.drag-over { border-color: #4f46e5; background: #f5f3ff; }
+.upload-zone .icon { font-size: 26px; margin-bottom: 5px; }
+.upload-zone p { font-size: 12px; color: #666; line-height: 1.5; }
+.upload-zone p strong { color: #4f46e5; font-weight: 500; }
+.upload-zone input[type=file] { display: none; }
+.file-label { font-size: 12px; color: #444; margin-top: 7px; word-break: break-all; }
+.sig-preview-wrap { margin-top: 10px; border: 1px solid #e5e4e0; border-radius: 8px; padding: 10px; background: #f9f8f6; display: flex; align-items: center; justify-content: center; min-height: 60px; }
+.sig-preview-wrap img { max-width: 100%; max-height: 70px; object-fit: contain; }
+.ctrl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ctrl-row label { font-size: 12px; color: #666; min-width: 48px; }
+.ctrl-row input[type=range] { flex: 1; accent-color: #4f46e5; }
+.ctrl-row span { font-size: 12px; color: #444; min-width: 36px; text-align: right; }
+.opacity-wrap { opacity: .55; }
+.opacity-wrap input { pointer-events: none; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 9px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+.btn-primary { background: #4f46e5; color: #fff; }
+.btn-primary:hover { background: #4338ca; }
+.btn-primary:disabled { background: #c7d2fe; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: #555; border: 1px solid #ddd; }
+.btn-ghost:hover { background: #f3f2ef; }
+.tip { font-size: 11px; color: #999; line-height: 1.6; margin-top: 6px; }
+.page-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
+.page-thumb { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 7px; cursor: pointer; border: 1.5px solid transparent; font-size: 13px; color: #555; transition: background .1s; }
+.page-thumb:hover { background: #f3f2ef; }
+.page-thumb.active { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; font-weight: 500; }
+.page-thumb canvas { width: 40px; height: 56px; border-radius: 4px; border: 1px solid #e0deda; flex-shrink: 0; }
+.canvas-area { overflow: auto; background: #e8e6e0; display: flex; align-items: flex-start; justify-content: center; padding: 32px; }
+.pdf-container { position: relative; display: inline-block; box-shadow: 0 4px 24px rgba(0,0,0,.18); border-radius: 3px; line-height: 0; background: #fff; }
+#pdfCanvas { display: block; border-radius: 3px; }
+.sig-overlay { position: absolute; user-select: none; touch-action: none; display: none; cursor: move; }
+.sig-overlay img { width: 100%; height: 100%; object-fit: fill; pointer-events: none; display: block; }
+.sel-border { position: absolute; inset: 0; border: 1.5px dashed #4f46e5; pointer-events: none; }
+.hdl { position: absolute; width: 9px; height: 9px; background: #fff; border: 2px solid #4f46e5; border-radius: 2px; transform: translate(-50%, -50%); }
+.hdl[data-d="nw"] { top:0;    left:0;    cursor: nw-resize; }
+.hdl[data-d="n"]  { top:0;    left:50%;  cursor: n-resize;  }
+.hdl[data-d="ne"] { top:0;    left:100%; cursor: ne-resize; }
+.hdl[data-d="e"]  { top:50%;  left:100%; cursor: e-resize;  }
+.hdl[data-d="se"] { top:100%; left:100%; cursor: se-resize; }
+.hdl[data-d="s"]  { top:100%; left:50%;  cursor: s-resize;  }
+.hdl[data-d="sw"] { top:100%; left:0;    cursor: sw-resize; }
+.hdl[data-d="w"]  { top:50%;  left:0;    cursor: w-resize;  }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #aaa; font-size: 14px; width: 100%; min-height: 300px; }
+.empty-state .big-icon { font-size: 48px; opacity: .4; }
+#toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1a1a1a; color: #fff; padding: 9px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: all .25s; pointer-events: none; z-index: 9999; white-space: nowrap; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+footer { text-align: center; font-size: 11px; color: #bbb; padding: 10px; background: #fff; border-top: 1px solid #e5e4e0; grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<header>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+  <h1>PDF 电子签名工具</h1>
+  <span class="badge">v2.2 · 本地运行 · 数据不上传</span>
+</header>
+<div class="workspace">
+  <aside class="sidebar">
+    <div class="panel-section">
+      <h2>① 上传 PDF</h2>
+      <div class="upload-zone" id="pdfZone">
+        <div class="icon">📄</div>
+        <p><strong>点击选择</strong>或拖入 PDF 文件</p>
+        <p style="margin-top:4px;font-size:11px;color:#aaa">Word 请先另存为 PDF</p>
+        <input type="file" id="pdfInput" accept=".pdf">
+      </div>
+      <div class="file-label" id="pdfLabel"></div>
+    </div>
+    <div class="panel-section">
+      <h2>② 上传签名图片</h2>
+      <div class="upload-zone" id="sigZone">
+        <div class="icon">✍️</div>
+        <p><strong>点击选择</strong>签名图片</p>
+        <p style="margin-top:4px;font-size:11px;color:#aaa">PNG 透明背景效果最佳</p>
+        <input type="file" id="sigInput" accept="image/*">
+      </div>
+      <div class="sig-preview-wrap" id="sigPreviewWrap" style="display:none">
+        <img id="sigPreviewImg" src="" alt="签名预览">
+      </div>
+    </div>
+    <div class="panel-section" id="bgSection" style="display:none">
+      <h2>③ 去除白色背景</h2>
+      <div class="ctrl-row">
+        <label>墨迹深度</label>
+        <input type="range" id="bgGamma" min="10" max="300" value="120">
+        <span id="bgGammaVal">120</span>
+      </div>
+      <div class="ctrl-row">
+        <label>截断阈值</label>
+        <input type="range" id="bgCutoff" min="100" max="255" value="230">
+        <span id="bgCutoffVal">230</span>
+      </div>
+      <button class="btn btn-ghost" id="removeBgBtn" style="margin-bottom:6px">✨ 去除白底</button>
+      <button class="btn btn-ghost" id="resetSigBtn" style="font-size:12px;color:#999;border-color:#eee">恢复原图</button>
+      <p class="tip">截断阈值越低去白越彻底；墨迹深度越低笔迹越淡越透</p>
+    </div>
+    <div class="panel-section">
+      <h2>④ 调整签名</h2>
+      <div id="ctrlWrap" class="opacity-wrap">
+        <div class="ctrl-row">
+          <label>透明度</label>
+          <input type="range" id="sigOpacity" min="10" max="100" value="100">
+          <span id="sigOpacityVal">100%</span>
+        </div>
+        <p class="tip">拖拽框体移动；拖边或角自由缩放</p>
+      </div>
+    </div>
+    <div class="panel-section" id="pageSection" style="display:none">
+      <h2>页面</h2>
+      <div class="page-list" id="pageList"></div>
+    </div>
+    <div class="panel-section" style="margin-top:auto">
+      <button class="btn btn-primary" id="exportBtn" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        导出带签名 PDF
+      </button>
+      <p class="tip" style="margin-top:8px;text-align:center">所有处理均在本地完成</p>
+    </div>
+  </aside>
+  <main class="canvas-area">
+    <div class="empty-state" id="emptyState">
+      <div class="big-icon">📄</div>
+      <div>请先上传 PDF 文件</div>
+    </div>
+    <div class="pdf-container" id="pdfContainer" style="display:none">
+      <canvas id="pdfCanvas"></canvas>
+      <div class="sig-overlay" id="sigOverlay">
+        <img id="sigInCanvas" src="" alt="签名">
+        <div class="sel-border"></div>
+        <div class="hdl" data-d="nw"></div>
+        <div class="hdl" data-d="n"></div>
+        <div class="hdl" data-d="ne"></div>
+        <div class="hdl" data-d="e"></div>
+        <div class="hdl" data-d="se"></div>
+        <div class="hdl" data-d="s"></div>
+        <div class="hdl" data-d="sw"></div>
+        <div class="hdl" data-d="w"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast"></div>
+<footer>Designed by 葱头爸爸 · liamphoenixwayne@outlook.com</footer>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let pdfDoc=null,pdfBytes=null,pdfArrayBuffer=null,currentPage=1,totalPages=0;
+const SCALE=1.8;
+let sigDataUrl=null,sigOrigDataUrl=null,sigNW=0,sigNH=0;
+
+const pdfInput=document.getElementById('pdfInput');
+const pdfZone=document.getElementById('pdfZone');
+const pdfLabel=document.getElementById('pdfLabel');
+const sigInput=document.getElementById('sigInput');
+const sigZone=document.getElementById('sigZone');
+const sigPreviewWrap=document.getElementById('sigPreviewWrap');
+const sigPreviewImg=document.getElementById('sigPreviewImg');
+const pdfCanvas=document.getElementById('pdfCanvas');
+const pdfContainer=document.getElementById('pdfContainer');
+const emptyState=document.getElementById('emptyState');
+const sigOverlay=document.getElementById('sigOverlay');
+const sigInCanvas=document.getElementById('sigInCanvas');
+const pageList=document.getElementById('pageList');
+const pageSection=document.getElementById('pageSection');
+const bgSection=document.getElementById('bgSection');
+const ctrlWrap=document.getElementById('ctrlWrap');
+const sigOpacity=document.getElementById('sigOpacity');
+const sigOpacityVal=document.getElementById('sigOpacityVal');
+const exportBtn=document.getElementById('exportBtn');
+const bgGamma=document.getElementById('bgGamma');
+const bgGammaVal=document.getElementById('bgGammaVal');
+const bgCutoff=document.getElementById('bgCutoff');
+const bgCutoffVal=document.getElementById('bgCutoffVal');
+
+pdfZone.addEventListener('click',()=>pdfInput.click());
+pdfZone.addEventListener('dragover',e=>{e.preventDefault();pdfZone.classList.add('drag-over');});
+pdfZone.addEventListener('dragleave',()=>pdfZone.classList.remove('drag-over'));
+pdfZone.addEventListener('drop',e=>{e.preventDefault();pdfZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f?.type==='application/pdf')loadPDF(f);else toast('请上传 PDF 文件');});
+pdfInput.addEventListener('change',e=>{if(e.target.files[0])loadPDF(e.target.files[0]);});
+
+async function loadPDF(file){
+  pdfLabel.textContent=file.name;
+  const ab=await file.arrayBuffer();
+  pdfArrayBuffer=ab.slice(0);        // 独立副本给 pdf-lib，避免 pdf.js transfer 后 detached
+  pdfBytes=new Uint8Array(ab);       // pdf.js 用原始 buffer
+  pdfDoc=await pdfjsLib.getDocument({data:pdfBytes}).promise;
+  totalPages=pdfDoc.numPages;currentPage=1;
+  await buildPageList();
+  await renderPage(currentPage);
+  pdfContainer.style.display='inline-block';
+  emptyState.style.display='none';
+  if(sigDataUrl)activateSig();
+  checkExport();
+}
+
+async function renderPage(num){
+  const page=await pdfDoc.getPage(num);
+  const vp=page.getViewport({scale:SCALE});
+  pdfCanvas.width=vp.width;pdfCanvas.height=vp.height;
+  await page.render({canvasContext:pdfCanvas.getContext('2d'),viewport:vp}).promise;
+}
+
+async function buildPageList(){
+  pageList.innerHTML='';pageSection.style.display='block';
+  for(let i=1;i<=totalPages;i++){
+    const page=await pdfDoc.getPage(i);
+    const vp=page.getViewport({scale:0.3});
+    const c=document.createElement('canvas');
+    c.width=vp.width;c.height=vp.height;
+    await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+    const thumb=document.createElement('div');
+    thumb.className='page-thumb'+(i===1?' active':'');
+    thumb.append(c,Object.assign(document.createElement('span'),{textContent:`第 ${i} 页`}));
+    thumb.addEventListener('click',async()=>{
+      currentPage=i;
+      document.querySelectorAll('.page-thumb').forEach((el,idx)=>el.classList.toggle('active',idx+1===i));
+      await renderPage(i);
+    });
+    pageList.appendChild(thumb);
+  }
+}
+
+sigZone.addEventListener('click',()=>sigInput.click());
+sigInput.addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    sigOrigDataUrl=sigDataUrl=ev.target.result;
+    sigPreviewImg.src=sigDataUrl;
+    sigPreviewWrap.style.display='flex';
+    bgSection.style.display='block';
+    const tmp=new Image();
+    tmp.onload=()=>{sigNW=tmp.naturalWidth;sigNH=tmp.naturalHeight;};
+    tmp.src=sigDataUrl;
+    if(pdfDoc)activateSig();
+    checkExport();
+  };
+  reader.readAsDataURL(f);
+});
+
+bgGamma.addEventListener('input',()=>bgGammaVal.textContent=bgGamma.value);
+bgCutoff.addEventListener('input',()=>bgCutoffVal.textContent=bgCutoff.value);
+
+document.getElementById('removeBgBtn').addEventListener('click',()=>{
+  if(!sigOrigDataUrl)return;
+  removeWhiteBg(sigOrigDataUrl,parseInt(bgGamma.value)/100,parseInt(bgCutoff.value))
+    .then(url=>{sigDataUrl=url;sigPreviewImg.src=url;sigInCanvas.src=url;toast('✅ 白底已去除');});
+});
+document.getElementById('resetSigBtn').addEventListener('click',()=>{
+  sigDataUrl=sigOrigDataUrl;
+  sigPreviewImg.src=sigInCanvas.src=sigOrigDataUrl;
+  toast('已恢复原图');
+});
+
+function removeWhiteBg(dataUrl,gamma,cutoff){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      c.width=img.naturalWidth;c.height=img.naturalHeight;
+      const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+      const id=ctx.getImageData(0,0,c.width,c.height);const d=id.data;
+      for(let i=0;i<d.length;i+=4){
+        const r=d[i],g=d[i+1],b=d[i+2];
+        const luma=0.2126*r+0.7152*g+0.0722*b;
+        if(luma>=cutoff){d[i+3]=0;continue;}
+        const t=luma/cutoff;
+        const alpha=1-Math.pow(t,gamma);
+        const factor=Math.min(1,alpha*1.5);
+        d[i]=Math.round(r*(1-factor));
+        d[i+1]=Math.round(g*(1-factor));
+        d[i+2]=Math.round(b*(1-factor));
+        d[i+3]=Math.round(alpha*255);
+      }
+      ctx.putImageData(id,0,0);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.src=dataUrl;
+  });
+}
+
+function activateSig(){
+  sigInCanvas.src=sigDataUrl;
+  sigOverlay.style.display='block';
+  ctrlWrap.classList.remove('opacity-wrap');
+  ctrlWrap.querySelectorAll('input').forEach(i=>i.removeAttribute('disabled'));
+  const defH=80;
+  const ratio=sigNW&&sigNH?sigNW/sigNH:3;
+  const defW=Math.round(defH*ratio);
+  sigOverlay.style.width=defW+'px';
+  sigOverlay.style.height=defH+'px';
+  sigOverlay.style.left=Math.max(0,pdfCanvas.width-defW-40)+'px';
+  sigOverlay.style.top=Math.max(0,pdfCanvas.height-defH-60)+'px';
+  sigOverlay.style.opacity=sigOpacity.value/100;
+}
+
+sigOpacity.addEventListener('input',()=>{
+  sigOpacityVal.textContent=sigOpacity.value+'%';
+  sigOverlay.style.opacity=sigOpacity.value/100;
+});
+
+let action=null,activeDir='',startX=0,startY=0,startL=0,startT=0,startW=0,startH=0;
+
+function boxRect(){return{l:parseFloat(sigOverlay.style.left)||0,t:parseFloat(sigOverlay.style.top)||0,w:sigOverlay.offsetWidth,h:sigOverlay.offsetHeight};}
+
+sigOverlay.querySelectorAll('.hdl').forEach(hdl=>{
+  hdl.addEventListener('pointerdown',e=>{
+    e.stopPropagation();
+    action='resize';activeDir=hdl.dataset.d;
+    const r=boxRect();startX=e.clientX;startY=e.clientY;startL=r.l;startT=r.t;startW=r.w;startH=r.h;
+    hdl.setPointerCapture(e.pointerId);
+  });
+});
+
+sigOverlay.addEventListener('pointerdown',e=>{
+  if(e.target.classList.contains('hdl')||e.target.classList.contains('sel-border'))return;
+  action='move';
+  const r=boxRect();startX=e.clientX;startY=e.clientY;startL=r.l;startT=r.t;startW=r.w;startH=r.h;
+  sigOverlay.setPointerCapture(e.pointerId);
+});
+
+sigOverlay.addEventListener('pointermove',e=>{
+  if(!action)return;
+  const dx=e.clientX-startX,dy=e.clientY-startY;
+  const CW=pdfCanvas.width,CH=pdfCanvas.height,MIN=20;
+  if(action==='move'){
+    sigOverlay.style.left=Math.max(0,Math.min(startL+dx,CW-startW))+'px';
+    sigOverlay.style.top=Math.max(0,Math.min(startT+dy,CH-startH))+'px';
+    return;
+  }
+  let l=startL,t=startT,w=startW,h=startH;const d=activeDir;
+  if(d.includes('e'))w=Math.max(MIN,startW+dx);
+  if(d.includes('s'))h=Math.max(MIN,startH+dy);
+  if(d.includes('w')){const dw=Math.min(dx,startW-MIN);l=startL+dw;w=startW-dw;}
+  if(d.includes('n')){const dh=Math.min(dy,startH-MIN);t=startT+dh;h=startH-dh;}
+  if(l<0){w+=l;l=0;}if(t<0){h+=t;t=0;}if(l+w>CW)w=CW-l;if(t+h>CH)h=CH-t;
+  sigOverlay.style.left=l+'px';sigOverlay.style.top=t+'px';
+  sigOverlay.style.width=w+'px';sigOverlay.style.height=h+'px';
+});
+
+sigOverlay.addEventListener('pointerup',()=>{action=null;activeDir='';});
+
+function checkExport(){exportBtn.disabled=!(pdfDoc&&sigDataUrl);}
+
+exportBtn.addEventListener('click',async()=>{
+  exportBtn.disabled=true;exportBtn.textContent='处理中…';
+  try{await embedSignature();toast('✅ PDF 已导出');}
+  catch(e){toast('导出失败: '+e.message);}
+  exportBtn.disabled=false;
+  exportBtn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 导出带签名 PDF';
+});
+
+async function embedSignature(){
+  const{PDFDocument}=PDFLib;
+  const doc=await PDFDocument.load(pdfArrayBuffer.slice(0));
+  const page=doc.getPages()[currentPage-1];
+  const{width:pW,height:pH}=page.getSize();
+  const scaleX=pW/pdfCanvas.width,scaleY=pH/pdfCanvas.height;
+  const ol=parseFloat(sigOverlay.style.left)||0;
+  const ot=parseFloat(sigOverlay.style.top)||0;
+  const ow=sigOverlay.offsetWidth,oh=sigOverlay.offsetHeight;
+  const pdfX=ol*scaleX,pdfY=pH-(ot+oh)*scaleY;
+  const pdfW=ow*scaleX,pdfH=oh*scaleY;
+
+  // dataURL → Uint8Array
+  function dataUrlToBytes(dataUrl){
+    const base64=dataUrl.split(',')[1];
+    const binary=atob(base64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    return bytes;
+  }
+
+  const sigBytes=dataUrlToBytes(sigDataUrl);
+  const isPng=sigDataUrl.startsWith('data:image/png');
+  let img;
+  if(isPng){
+    img=await doc.embedPng(sigBytes);
+  } else {
+    // 非PNG一律先转PNG再嵌入，避免JPEG不支持透明
+    const canvas=document.createElement('canvas');
+    const tmpImg=new Image();
+    await new Promise(r=>{tmpImg.onload=r;tmpImg.src=sigDataUrl;});
+    canvas.width=tmpImg.naturalWidth;canvas.height=tmpImg.naturalHeight;
+    canvas.getContext('2d').drawImage(tmpImg,0,0);
+    const pngUrl=canvas.toDataURL('image/png');
+    img=await doc.embedPng(dataUrlToBytes(pngUrl));
+  }
+
+  page.drawImage(img,{x:pdfX,y:pdfY,width:pdfW,height:pdfH,opacity:sigOpacity.value/100});
+  const bytes=await doc.save();
+  const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+  Object.assign(document.createElement('a'),{href:url,download:'signed_document.pdf'}).click();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
