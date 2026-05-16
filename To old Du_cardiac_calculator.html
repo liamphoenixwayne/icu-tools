@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心胸外科微泵药物计算器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f7f6f3;
+    color: #2c2c2a;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e0ded8;
+    padding-bottom: 1.25rem;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+    font-weight: 500;
+    color: #2c2c2a;
+    letter-spacing: -0.3px;
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: #888780;
+    margin-top: 4px;
+  }
+
+  /* ── Step cards ── */
+  .step-card {
+    background: #ffffff;
+    border: 0.5px solid #d3d1c7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .step-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #888780;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .step-card h2 {
+    font-size: 15px;
+    font-weight: 500;
+    color: #2c2c2a;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ── Form grid ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    color: #5f5e5a;
+    margin-bottom: 5px;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    height: 36px;
+    border: 0.5px solid #d3d1c7;
+    border-radius: 8px;
+    padding: 0 10px;
+    font-size: 14px;
+    color: #2c2c2a;
+    background: #faf9f7;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: #888780;
+    background: #fff;
+  }
+
+  /* ── CrCl result box ── */
+  .crcl-result {
+    background: #f1efe8;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .crcl-main {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .crcl-value {
+    font-size: 32px;
+    font-weight: 500;
+    color: #2c2c2a;
+    line-height: 1;
+  }
+
+  .crcl-unit {
+    font-size: 13px;
+    color: #888780;
+  }
+
+  .crcl-tag {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .tag-normal { background: #eaf3de; color: #3b6d11; }
+  .tag-mild   { background: #faeeda; color: #854f0b; }
+  .tag-mod    { background: #faece7; color: #993c1d; }
+  .tag-severe { background: #fcebeb; color: #a32d2d; }
+  .tag-esrd   { background: #f7c1c1; color: #791f1f; }
+
+  .crcl-note {
+    font-size: 12px;
+    color: #5f5e5a;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  /* ── Drug tabs ── */
+  .drug-nav {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .drug-tab {
+    padding: 6px 14px;
+    border: 0.5px solid #d3d1c7;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    background: #faf9f7;
+    color: #5f5e5a;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .drug-tab:hover { background: #f1efe8; color: #2c2c2a; }
+
+  .drug-tab.active {
+    background: #2c2c2a;
+    color: #f1efe8;
+    border-color: #2c2c2a;
+  }
+
+  /* ── Drug panel ── */
+  .drug-panel { display: none; }
+  .drug-panel.active { display: block; }
+
+  .drug-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 0.5px solid #e0ded8;
+  }
+
+  .drug-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #2c2c2a;
+  }
+
+  .drug-en {
+    font-size: 12px;
+    color: #888780;
+    margin-top: 2px;
+  }
+
+  .drug-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 0.5px solid;
+  }
+
+  .badge-central { background: #e6f1fb; color: #185fa5; border-color: #b5d4f4; }
+  .badge-pvc     { background: #fcebeb; color: #a32d2d; border-color: #f7c1c1; }
+  .badge-glu     { background: #faeeda; color: #854f0b; border-color: #fac775; }
+  .badge-offlabel{ background: #fbeaf0; color: #993556; border-color: #f4c0d1; }
+
+  /* ── Dose result ── */
+  .dose-result {
+    background: #f1efe8;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .dose-result-title {
+    font-size: 11px;
+    color: #888780;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .prep-line {
+    font-size: 15px;
+    font-weight: 500;
+    color: #2c2c2a;
+    margin-bottom: 4px;
+  }
+
+  .rate-line {
+    font-size: 13px;
+    color: #5f5e5a;
+    margin-bottom: 2px;
+  }
+
+  .rate-highlight {
+    font-weight: 500;
+    color: #2c2c2a;
+  }
+
+  /* ── Dose slider ── */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 1rem 0 0.5rem;
+  }
+
+  .slider-row label {
+    font-size: 12px;
+    color: #5f5e5a;
+    white-space: nowrap;
+  }
+
+  .slider-row input[type=range] {
+    flex: 1;
+    accent-color: #2c2c2a;
+  }
+
+  .slider-val {
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  /* ── Rate table ── */
+  .rate-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 0.75rem;
+  }
+
+  .rate-table th {
+    text-align: left;
+    font-weight: 500;
+    color: #5f5e5a;
+    padding: 5px 8px;
+    border-bottom: 0.5px solid #e0ded8;
+    font-size: 12px;
+  }
+
+  .rate-table td {
+    padding: 6px 8px;
+    border-bottom: 0.5px solid #f1efe8;
+    color: #2c2c2a;
+  }
+
+  .rate-table tr.highlight td {
+    background: #f7f6f3;
+    font-weight: 500;
+  }
+
+  /* ── Info sections ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 520px) {
+    .info-grid { grid-template-columns: 1fr; }
+  }
+
+  .info-box {
+    border: 0.5px solid #e0ded8;
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+  }
+
+  .info-box-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #888780;
+    margin-bottom: 6px;
+  }
+
+  .info-box ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .info-box ul li {
+    font-size: 12.5px;
+    color: #444441;
+    padding: 2px 0 2px 12px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .info-box ul li::before {
+    content: '·';
+    position: absolute;
+    left: 2px;
+    color: #b4b2a9;
+  }
+
+  .info-box.warn { border-color: #fac775; background: #fffcf5; }
+  .info-box.warn .info-box-title { color: #854f0b; }
+  .info-box.warn ul li { color: #5f4020; }
+
+  .info-box.danger { border-color: #f0958 5; background: #fff8f7; }
+  .info-box.danger { border-color: #f09585; background: #fff8f7; }
+  .info-box.danger .info-box-title { color: #a32d2d; }
+  .info-box.danger ul li { color: #6b2020; }
+
+  /* ── Offllabel warning ── */
+  .offlabel-banner {
+    background: #fbeaf0;
+    border: 0.5px solid #f4c0d1;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 12.5px;
+    color: #72243e;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  /* ── Renal note ── */
+  .renal-banner {
+    background: #e6f1fb;
+    border: 0.5px solid #b5d4f4;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 12.5px;
+    color: #0c447c;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    margin-top: 3rem;
+    font-size: 12px;
+    color: #b4b2a9;
+  }
+
+  .footer a {
+    color: #b4b2a9;
+    text-decoration: none;
+  }
+
+  .footer a:hover { color: #888780; }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    color: #b4b2a9;
+    padding: 2rem 0;
+    font-size: 13px;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    height: 0.5px;
+    background: #e0ded8;
+    margin: 1rem 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <h1>心胸外科微泵药物计算器</h1>
+    <p>第一步计算肌酐清除率，第二步选择药物查看配制方案与泵速</p>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step-card">
+    <div class="step-label">Step 01</div>
+    <h2>肌酐清除率（Cockcroft-Gault 公式）</h2>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>年龄（岁）</label>
+        <input type="number" id="age" min="18" max="120" placeholder="例：65">
+      </div>
+      <div class="form-group">
+        <label>体重（kg）</label>
+        <input type="number" id="weight" min="30" max="200" placeholder="例：65">
+      </div>
+      <div class="form-group">
+        <label>性别</label>
+        <select id="sex">
+          <option value="male">男</option>
+          <option value="female">女</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>血肌酐（μmol/L）</label>
+        <input type="number" id="scr" min="10" max="2000" placeholder="例：88">
+      </div>
+    </div>
+
+    <div class="crcl-result" id="crcl-result">
+      <div class="empty-state" style="width:100%">请填入上方数据以计算肌酐清除率</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card">
+    <div class="step-label">Step 02</div>
+    <h2>药物配制计算（统一稀释至 50 mL 注射器）</h2>
+
+    <div class="drug-nav">
+      <div class="drug-tab" onclick="switchDrug('dobutamine')" id="tab-dobutamine">多巴酚丁胺</div>
+      <div class="drug-tab" onclick="switchDrug('dopamine')" id="tab-dopamine">多巴胺</div>
+      <div class="drug-tab" onclick="switchDrug('nitroglycerin')" id="tab-nitroglycerin">硝酸甘油</div>
+      <div class="drug-tab" onclick="switchDrug('esmolol')" id="tab-esmolol">艾司洛尔</div>
+      <div class="drug-tab" onclick="switchDrug('phentolamine')" id="tab-phentolamine">酚妥拉明</div>
+      <div class="drug-tab" onclick="switchDrug('amiodarone')" id="tab-amiodarone">胺碘酮</div>
+    </div>
+
+    <!-- DOBUTAMINE -->
+    <div class="drug-panel" id="panel-dobutamine">
+      <div class="drug-header">
+        <div>
+          <div class="drug-name">多巴酚丁胺</div>
+          <div class="drug-en">Dobutamine · 主要激动 β1 受体（正性肌力）</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="drug-badge badge-central">优选中心静脉</span>
+        </div>
+      </div>
+
+      <div class="dose-result" id="dob-result">
+        <div class="empty-state">请先完成 Step 01 输入体重</div>
+      </div>
+
+      <div class="slider-row">
+        <label>目标剂量</label>
+        <input type="range" id="dob-dose" min="1" max="20" step="0.5" value="5" oninput="updateDobutamine()">
+        <span class="slider-val" id="dob-dose-val">5 μg/kg/min</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box warn">
+          <div class="info-box-title">⚠ 注意事项</div>
+          <ul>
+            <li>剂量 &gt;10 μg/kg/min 心动过速明显增加</li>
+            <li>需先纠正低血容量再使用</li>
+            <li>属于血管刺激性药物（Vesicant），外渗可致组织坏死</li>
+            <li>与多巴胺外观相似，需注意区分</li>
+            <li>监测心率、血压、心输出量</li>
+          </ul>
+        </div>
+        <div class="info-box danger">
+          <div class="info-box-title">✕ 禁忌症</div>
+          <ul>
+            <li>肥厚型梗阻性心肌病（HOCM）</li>
+            <li>严重低血容量未纠正前</li>
+            <li>对亚硫酸盐（磺胺）过敏</li>
+            <li>未控制的快速性心律失常</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOPAMINE -->
+    <div class="drug-panel" id="panel-dopamine">
+      <div class="drug-header">
+        <div>
+          <div class="drug-name">多巴胺</div>
+          <div class="drug-en">Dopamine · 剂量依赖性多受体激动</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="drug-badge badge-central">必须中心静脉</span>
+        </div>
+      </div>
+
+      <div class="dose-result" id="dop-result">
+        <div class="empty-state">请先完成 Step 01 输入体重</div>
+      </div>
+
+      <div class="slider-row">
+        <label>目标剂量</label>
+        <input type="range" id="dop-dose" min="1" max="20" step="0.5" value="5" oninput="updateDopamine()">
+        <span class="slider-val" id="dop-dose-val">5 μg/kg/min</span>
+      </div>
+
+      <div style="margin-top:0.75rem;">
+        <table class="rate-table">
+          <thead>
+            <tr><th>剂量范围</th><th>主要效应</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>&lt;3 μg/kg/min</td><td>DA1 激动 → 扩张肾血管、利尿</td></tr>
+            <tr><td>3–10 μg/kg/min</td><td>β1 激动 → 正性肌力、增加心输出量</td></tr>
+            <tr><td>&gt;10 μg/kg/min</td><td>α1 激动 → 血管收缩、升压</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box warn">
+          <div class="info-box-title">⚠ 注意事项</div>
+          <ul>
+            <li>外渗可致严重组织坏死/坏疽，必须中心静脉</li>
+            <li>骤然停药可引起低血压，需逐渐减量</li>
+            <li>可诱发心律失常，注意监测</li>
+            <li>不可与碱性溶液同一管路混合</li>
+            <li>高剂量可致末梢血管病患肢端坏疽</li>
+          </ul>
+        </div>
+        <div class="info-box danger">
+          <div class="info-box-title">✕ 禁忌症</div>
+          <ul>
+            <li>嗜铬细胞瘤（FDA 明确禁忌）</li>
+            <li>未纠正低血容量</li>
+            <li>心室纤颤</li>
+            <li>对亚硫酸盐（磺胺）过敏</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- NITROGLYCERIN -->
+    <div class="drug-panel" id="panel-nitroglycerin">
+      <div class="drug-header">
+        <div>
+          <div class="drug-name">硝酸甘油</div>
+          <div class="drug-en">Nitroglycerin / GTN · 扩静脉为主，减前负荷</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="drug-badge badge-glu">仅用 5% 葡萄糖</span>
+          <span class="drug-badge badge-pvc">禁 PVC 输液管</span>
+        </div>
+      </div>
+
+      <div class="dose-result" id="nit-result">
+        <div class="empty-state">请先完成 Step 01 输入体重</div>
+      </div>
+
+      <div class="slider-row">
+        <label>目标剂量</label>
+        <input type="range" id="nit-dose" min="5" max="400" step="5" value="50" oninput="updateNitroglycerin()">
+        <span class="slider-val" id="nit-dose-val">50 μg/min</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box warn">
+          <div class="info-box-title">⚠ 注意事项</div>
+          <ul>
+            <li>必须使用玻璃瓶或非 PVC 输液管（药物被吸附）</li>
+            <li>仅用 5% 葡萄糖溶液配制</li>
+            <li>不可与其他药物同瓶混合</li>
+            <li>长时间使用（&gt;72h）可产生耐受性</li>
+            <li>突然停药有反跳风险，需逐渐减量</li>
+            <li>密切监测血压，防止低血压</li>
+          </ul>
+        </div>
+        <div class="info-box danger">
+          <div class="info-box-title">✕ 禁忌症</div>
+          <ul>
+            <li>同时使用 PDE-5 抑制剂（西地那非等）</li>
+            <li>严重低血压（SBP &lt;90 mmHg）</li>
+            <li>肥厚型梗阻性心肌病（HOCM）</li>
+            <li>颅内压升高</li>
+            <li>严重贫血、循环血容量不足</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESMOLOL -->
+    <div class="drug-panel" id="panel-esmolol">
+      <div class="drug-header">
+        <div>
+          <div class="drug-name">艾司洛尔</div>
+          <div class="drug-en">Esmolol · 超短效选择性 β1 阻滞剂，t½ ≈ 9 min</div>
+        </div>
+      </div>
+
+      <div class="dose-result" id="esm-result">
+        <div class="empty-state">请先完成 Step 01 输入体重</div>
+      </div>
+
+      <div class="slider-row">
+        <label>维持剂量</label>
+        <input type="range" id="esm-dose" min="50" max="300" step="10" value="100" oninput="updateEsmolol()">
+        <span class="slider-val" id="esm-dose-val">100 μg/kg/min</span>
+      </div>
+
+      <div style="margin-top:0.75rem;">
+        <table class="rate-table">
+          <thead>
+            <tr><th>阶段</th><th>剂量</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>负荷剂量</td><td>500 μg/kg</td><td>1 min 静注（SVT）/ 30s 快推（术后高血压）</td></tr>
+            <tr><td>初始维持</td><td>50 μg/kg/min</td><td>每 3–4 min 调整一次</td></tr>
+            <tr><td>最大剂量</td><td>200–300 μg/kg/min</td><td>心动过速 ≤200；高血压 ≤300</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box warn">
+          <div class="info-box-title">⚠ 注意事项</div>
+          <ul>
+            <li>低血压最常见（发生率 &gt;10%），尤其基础血压低者</li>
+            <li>哮喘/COPD 慎用（可致支气管痉挛）</li>
+            <li>糖尿病患者可掩盖低血糖引起的心动过速</li>
+            <li>冠心病患者不可骤然停药（心肌缺血反跳）</li>
+            <li>不可与维拉帕米同时静脉使用</li>
+          </ul>
+        </div>
+        <div class="info-box danger">
+          <div class="info-box-title">✕ 禁忌症</div>
+          <ul>
+            <li>严重窦性心动过缓</li>
+            <li>二/三度房室传导阻滞（无起搏器）</li>
+            <li>病态窦房结综合征</li>
+            <li>失代偿性心力衰竭</li>
+            <li>心源性休克</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHENTOLAMINE -->
+    <div class="drug-panel" id="panel-phentolamine">
+      <div class="drug-header">
+        <div>
+          <div class="drug-name">酚妥拉明</div>
+          <div class="drug-en">Phentolamine · 非选择性 α1+α2 受体阻滞剂</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="drug-badge badge-offlabel">Off-label 用法</span>
+        </div>
+      </div>
+
+      <div class="offlabel-banner">
+        ⚠ <strong>Off-label 说明：</strong>酚妥拉明用于咯血止血为超说明书用法（通过降低支气管动脉压力辅助止血），国际药品说明书核准适应症为嗜铬细胞瘤围术期高血压及血管升压药外渗解救。此用法在中国胸外科/呼吸科有临床实践文献记录，但无 RCT 支持，无国际指南剂量推荐。<br>
+        ⚠ <strong>重要禁忌：</strong>合并冠心病/心肌梗死史患者禁用。
+      </div>
+
+      <div class="dose-result" id="phe-result">
+        <div class="empty-state">请先完成 Step 01 输入体重</div>
+      </div>
+
+      <div class="slider-row">
+        <label>目标剂量</label>
+        <input type="range" id="phe-dose" min="0.05" max="0.5" step="0.05" value="0.1" oninput="updatePhentolamine()">
+        <span class="slider-val" id="phe-dose-val">0.1 mg/kg/h</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box warn">
+          <div class="info-box-title">⚠ 注意事项</div>
+          <ul>
+            <li>可致严重低血压，需密切监测血压</li>
+            <li>反射性心动过速可加重心肌耗氧</li>
+            <li>肾功能不全者慎用</li>
+            <li>首次使用建议先给试验剂量观察血压反应</li>
+            <li>注意与垂体后叶素、氨甲环酸等联用的相互作用</li>
+          </ul>
+        </div>
+        <div class="info-box danger">
+          <div class="info-box-title">✕ 禁忌症</div>
+          <ul>
+            <li>心肌梗死（或 MI 病史）</li>
+            <li>不稳定型心绞痛 / 冠状动脉疾病</li>
+            <li>严重心律失常</li>
+            <li>对酚妥拉明或同类药过敏</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- AMIODARONE -->
+    <div class="drug-panel" id="panel-amiodarone">
+      <div class="drug-header">
+        <div>
+          <div class="drug-name">胺碘酮</div>
+          <div class="drug-en">Amiodarone · 多通道阻滞，I/II/III/IV 类综合效应</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="drug-badge badge-glu">仅用 5% 葡萄糖</span>
+          <span class="drug-badge badge-central">优选中心静脉</span>
+          <span class="drug-badge badge-pvc">禁 PVC 管</span>
+        </div>
+      </div>
+
+      <div class="dose-result" id="ami-result">
+        <div class="empty-state">请先完成 Step 01 输入体重</div>
+      </div>
+
+      <div style="margin-top:0.75rem;">
+        <table class="rate-table">
+          <thead>
+            <tr><th>阶段</th><th>剂量</th><th>泵速（计算后）</th><th>时长</th></tr>
+          </thead>
+          <tbody id="ami-table">
+            <tr><td colspan="4" style="color:#b4b2a9;text-align:center;padding:1rem 0;">请先输入体重</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box warn">
+          <div class="info-box-title">⚠ 注意事项</div>
+          <ul>
+            <li>含碘量 37%，可致甲状腺功能异常（亢进或减退）</li>
+            <li>与华法林相互作用显著（增强抗凝）</li>
+            <li>与地高辛合用可升高地高辛血药浓度</li>
+            <li>延长 QT 间期，禁与其他延长 QT 药物联用</li>
+            <li>罕见但严重：间质性肺炎（需监测肺功能）</li>
+            <li>仅用 5% 葡萄糖配制；禁用 PVC 管路</li>
+            <li>静脉 24h 总量 &lt;1.2 g</li>
+          </ul>
+        </div>
+        <div class="info-box danger">
+          <div class="info-box-title">✕ 禁忌症</div>
+          <ul>
+            <li>窦性心动过缓（无起搏器）</li>
+            <li>二/三度房室传导阻滞（无起搏器）</li>
+            <li>碘过敏</li>
+            <li>严重甲状腺功能异常</li>
+            <li>妊娠及哺乳期</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    Designed by 葱头爸爸 · <a href="mailto:liamphoenixwayne@outlook.com">liamphoenixwayne@outlook.com</a>
+  </footer>
+
+</div>
+
+<script>
+  // ── State ──
+  let crcl = null;
+  let weight = null;
+  let currentDrug = null;
+
+  // ── CrCl calculation ──
+  function calcCrCl() {
+    const age = parseFloat(document.getElementById('age').value);
+    const wt  = parseFloat(document.getElementById('weight').value);
+    const sex = document.getElementById('sex').value;
+    const scr = parseFloat(document.getElementById('scr').value);
+
+    if (isNaN(age) || isNaN(wt) || isNaN(scr) || age <= 0 || wt <= 0 || scr <= 0) {
+      crcl = null;
+      weight = null;
+      document.getElementById('crcl-result').innerHTML = '<div class="empty-state" style="width:100%">请填入上方数据以计算肌酐清除率</div>';
+      refreshDrugPanel();
+      return;
+    }
+
+    weight = wt;
+    const scrMgDl = scr / 88.4;
+    let val = ((140 - age) * wt) / (72 * scrMgDl);
+    if (sex === 'female') val *= 0.85;
+    crcl = Math.round(val * 10) / 10;
+
+    let tagClass, tagText, noteText;
+    if (crcl >= 60) {
+      tagClass = 'tag-normal'; tagText = '正常 / 轻度下降';
+      noteText = '按标准剂量使用。';
+    } else if (crcl >= 30) {
+      tagClass = 'tag-mild'; tagText = '中度受损';
+      noteText = '胺碘酮、艾司洛尔无需调整剂量。多巴胺/多巴酚丁胺需监测肾灌注。';
+    } else if (crcl >= 10) {
+      tagClass = 'tag-mod'; tagText = '重度受损';
+      noteText = '艾司洛尔无需调整（红细胞酯酶水解）；胺碘酮无需调整。密切监测血流动力学。';
+    } else if (crcl > 0) {
+      tagClass = 'tag-severe'; tagText = '极重度受损';
+      noteText = '所有血管活性药物需极为谨慎，密切监测。';
+    } else {
+      tagClass = 'tag-esrd'; tagText = '数据异常';
+      noteText = '请核查输入数据。';
+    }
+
+    document.getElementById('crcl-result').innerHTML = `
+      <div class="crcl-main">
+        <span class="crcl-value">${crcl}</span>
+        <span class="crcl-unit">mL/min</span>
+      </div>
+      <span class="crcl-tag ${tagClass}">${tagText}</span>
+      <span class="crcl-note">${noteText}</span>
+    `;
+
+    refreshDrugPanel();
+  }
+
+  ['age','weight','sex','scr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', calcCrCl);
+  });
+
+  // ── Drug tabs ──
+  function switchDrug(drug) {
+    document.querySelectorAll('.drug-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.drug-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + drug).classList.add('active');
+    document.getElementById('panel-' + drug).classList.add('active');
+    currentDrug = drug;
+    refreshDrugPanel();
+  }
+
+  function refreshDrugPanel() {
+    if (!currentDrug) return;
+    const fns = {
+      dobutamine: updateDobutamine,
+      dopamine: updateDopamine,
+      nitroglycerin: updateNitroglycerin,
+      esmolol: updateEsmolol,
+      phentolamine: updatePhentolamine,
+      amiodarone: updateAmiodarone,
+    };
+    if (fns[currentDrug]) fns[currentDrug]();
+  }
+
+  function noWeightMsg(id) {
+    document.getElementById(id).innerHTML = '<div class="empty-state">请先在 Step 01 中输入体重</div>';
+  }
+
+  // ─────────────────────────────────────────
+  // DOBUTAMINE
+  function updateDobutamine() {
+    const dose = parseFloat(document.getElementById('dob-dose').value);
+    document.getElementById('dob-dose-val').textContent = dose + ' μg/kg/min';
+    if (!weight) { noWeightMsg('dob-result'); return; }
+
+    const drugMg = parseFloat((weight * 3).toFixed(1));
+    const nsMl = parseFloat((50 - drugMg / 12.5 * 2).toFixed(1)); // assume 250mg/20ml ampoule ~12.5mg/ml
+    const rateMlH = dose;
+    const drugAmt = Math.round(weight * 3);
+
+    document.getElementById('dob-result').innerHTML = `
+      <div class="dose-result-title">配制方案（50 mL 注射器）</div>
+      <div class="prep-line">多巴酚丁胺 <span style="color:#185fa5">${drugAmt} mg</span> + NS → 补至 50 mL</div>
+      <div class="divider"></div>
+      <div class="rate-line">目标剂量 <span class="rate-highlight">${dose} μg/kg/min</span> → 泵速 <span class="rate-highlight">${dose.toFixed(1)} mL/h</span></div>
+      <div class="rate-line" style="margin-top:4px;font-size:12px;color:#888780;">换算依据：1 mL/h = 1 μg/kg/min（体重 ${weight} kg）</div>
+      ${buildRateTable('dob', dose)}
+    `;
+  }
+
+  // DOPAMINE
+  function updateDopamine() {
+    const dose = parseFloat(document.getElementById('dop-dose').value);
+    document.getElementById('dop-dose-val').textContent = dose + ' μg/kg/min';
+    if (!weight) { noWeightMsg('dop-result'); return; }
+
+    const drugAmt = Math.round(weight * 3);
+
+    document.getElementById('dop-result').innerHTML = `
+      <div class="dose-result-title">配制方案（50 mL 注射器）</div>
+      <div class="prep-line">多巴胺 <span style="color:#185fa5">${drugAmt} mg</span> + NS → 补至 50 mL</div>
+      <div class="divider"></div>
+      <div class="rate-line">目标剂量 <span class="rate-highlight">${dose} μg/kg/min</span> → 泵速 <span class="rate-highlight">${dose.toFixed(1)} mL/h</span></div>
+      <div class="rate-line" style="margin-top:4px;font-size:12px;color:#888780;">换算依据：1 mL/h = 1 μg/kg/min（体重 ${weight} kg）</div>
+      ${buildRateTable('dop', dose)}
+    `;
+  }
+
+  function buildRateTable(prefix, currentDose) {
+    const steps = [2, 3, 5, 8, 10, 15, 20];
+    let rows = steps.map(d => {
+      const isActive = Math.abs(d - currentDose) < 0.3;
+      return `<tr class="${isActive ? 'highlight' : ''}">
+        <td>${d} μg/kg/min</td>
+        <td>${d.toFixed(1)} mL/h</td>
+      </tr>`;
+    }).join('');
+    return `<table class="rate-table" style="margin-top:0.75rem">
+      <thead><tr><th>剂量</th><th>泵速</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  // NITROGLYCERIN
+  function updateNitroglycerin() {
+    const dose = parseFloat(document.getElementById('nit-dose').value);
+    document.getElementById('nit-dose-val').textContent = dose + ' μg/min';
+    if (!weight) { noWeightMsg('nit-result'); return; }
+
+    // 50mg in 50mL = 1000 μg/mL
+    // rate mL/h = dose(μg/min) * 60 / 1000
+    const rate = parseFloat((dose * 60 / 1000).toFixed(2));
+
+    document.getElementById('nit-result').innerHTML = `
+      <div class="dose-result-title">配制方案（50 mL 注射器）</div>
+      <div class="prep-line">硝酸甘油 <span style="color:#185fa5">50 mg</span> + 5% 葡萄糖 → 补至 50 mL（浓度 1 mg/mL = 1000 μg/mL）</div>
+      <div class="divider"></div>
+      <div class="rate-line">目标剂量 <span class="rate-highlight">${dose} μg/min</span> → 泵速 <span class="rate-highlight">${rate} mL/h</span></div>
+      <div class="rate-line" style="margin-top:4px;font-size:12px;color:#888780;">换算：泵速(mL/h) = 剂量(μg/min) × 60 ÷ 1000</div>
+      <table class="rate-table" style="margin-top:0.75rem">
+        <thead><tr><th>剂量</th><th>泵速</th><th>临床场景</th></tr></thead>
+        <tbody>
+          <tr class="${dose<=20?'highlight':''}"><td>10–20 μg/min</td><td>0.6–1.2 mL/h</td><td>心绞痛初始剂量</td></tr>
+          <tr class="${dose>20&&dose<=60?'highlight':''}"><td>20–60 μg/min</td><td>1.2–3.6 mL/h</td><td>心绞痛常用范围</td></tr>
+          <tr class="${dose>60&&dose<=200?'highlight':''}"><td>60–200 μg/min</td><td>3.6–12 mL/h</td><td>心衰减前负荷</td></tr>
+          <tr class="${dose>200?'highlight':''}"><td>200–400 μg/min</td><td>12–24 mL/h</td><td>最大剂量范围</td></tr>
+        </tbody>
+      </table>
+    `;
+  }
+
+  // ESMOLOL
+  function updateEsmolol() {
+    const dose = parseFloat(document.getElementById('esm-dose').value);
+    document.getElementById('esm-dose-val').textContent = dose + ' μg/kg/min';
+    if (!weight) { noWeightMsg('esm-result'); return; }
+
+    // 500mg in 50mL = 10 mg/mL = 10000 μg/mL
+    // rate mL/h = dose(μg/kg/min) * weight * 60 / 10000
+    const rate = parseFloat((dose * weight * 60 / 10000).toFixed(1));
+    const loadDose = parseFloat((0.5 * weight).toFixed(1));
+    const loadVol  = parseFloat((loadDose / 10).toFixed(2));
+
+    document.getElementById('esm-result').innerHTML = `
+      <div class="dose-result-title">配制方案（50 mL 注射器）</div>
+      <div class="prep-line">艾司洛尔 <span style="color:#185fa5">500 mg</span> + NS → 补至 50 mL（浓度 10 mg/mL）</div>
+      <div class="divider"></div>
+      <div class="rate-line">负荷剂量（SVT）：<span class="rate-highlight">${loadDose} mg（${loadVol} mL）</span>，1 min 静注</div>
+      <div class="rate-line" style="margin-top:4px;">维持剂量 <span class="rate-highlight">${dose} μg/kg/min</span> → 泵速 <span class="rate-highlight">${rate} mL/h</span></div>
+      <div class="rate-line" style="margin-top:4px;font-size:12px;color:#888780;">换算：泵速(mL/h) = 剂量(μg/kg/min) × ${weight} kg × 60 ÷ 10000</div>
+      <table class="rate-table" style="margin-top:0.75rem">
+        <thead><tr><th>维持剂量</th><th>泵速</th></tr></thead>
+        <tbody>
+          ${[50,100,150,200,300].map(d=>{
+            const r = parseFloat((d * weight * 60 / 10000).toFixed(1));
+            const isActive = Math.abs(d - dose) < 6;
+            return `<tr class="${isActive?'highlight':''}"><td>${d} μg/kg/min</td><td>${r} mL/h</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // PHENTOLAMINE
+  function updatePhentolamine() {
+    const dose = parseFloat(document.getElementById('phe-dose').value);
+    document.getElementById('phe-dose-val').textContent = dose.toFixed(2) + ' mg/kg/h';
+    if (!weight) { noWeightMsg('phe-result'); return; }
+
+    // 10mg in 50mL = 0.2mg/mL
+    // rate mL/h = dose(mg/kg/h) * weight / 0.2
+    const rate = parseFloat((dose * weight / 0.2).toFixed(1));
+    const totalH = parseFloat((dose * weight).toFixed(2));
+
+    document.getElementById('phe-result').innerHTML = `
+      <div class="dose-result-title">配制方案（50 mL 注射器）</div>
+      <div class="prep-line">酚妥拉明 <span style="color:#185fa5">10 mg</span> + NS → 补至 50 mL（浓度 0.2 mg/mL）</div>
+      <div class="divider"></div>
+      <div class="rate-line">目标剂量 <span class="rate-highlight">${dose.toFixed(2)} mg/kg/h</span> → 总量 <span class="rate-highlight">${totalH} mg/h</span> → 泵速 <span class="rate-highlight">${rate} mL/h</span></div>
+      <div class="rate-line" style="margin-top:4px;font-size:12px;color:#888780;">换算：泵速(mL/h) = 剂量(mg/kg/h) × ${weight} kg ÷ 0.2 mg/mL</div>
+      <div class="rate-line" style="margin-top:8px;font-size:12px;color:#993556;">⚠ 此为 off-label 用法，建议先给 5 mg 试验剂量（缓慢静推 &gt;1 min），观察血压变化后再开泵</div>
+      <table class="rate-table" style="margin-top:0.75rem">
+        <thead><tr><th>剂量</th><th>总量/h</th><th>泵速</th></tr></thead>
+        <tbody>
+          ${[0.05,0.1,0.15,0.2,0.3,0.5].map(d=>{
+            const r = parseFloat((d * weight / 0.2).toFixed(1));
+            const tot = parseFloat((d * weight).toFixed(2));
+            const isActive = Math.abs(d - dose) < 0.03;
+            return `<tr class="${isActive?'highlight':''}"><td>${d.toFixed(2)} mg/kg/h</td><td>${tot} mg/h</td><td>${r} mL/h</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // AMIODARONE
+  function updateAmiodarone() {
+    if (!weight) {
+      noWeightMsg('ami-result');
+      document.getElementById('ami-table').innerHTML = '<tr><td colspan="4" style="color:#b4b2a9;text-align:center;padding:1rem 0;">请先输入体重</td></tr>';
+      return;
+    }
+
+    // Standard protocol: 300mg in 50mL 5%GS = 6mg/mL
+    // Loading: 150mg over 10min → rate = 150/6/（10/60）= 150mg ÷ 6mg/mL ÷ 0.167h = 150ml
+    // Actually: 150mg / 6mg/mL = 25mL volume, over 10min = 150mL/h
+    // Slow loading: 900mg/500mL = 1.8mg/mL at 1mg/min = 60mg/h → 33.3 mL/h ... but we use 50mL syringe
+    // 50mL syringe: 300mg/50mL = 6mg/mL
+    // Fast load: 150mg bolus over 10min → 150mg÷6mg/mL=25mL → rate=25/(10/60)=150 mL/h (too fast for syringe)
+    // Better: bolus as separate 20mL: 150mg in 20mL 5%GS, push over 10 min
+
+    // Maintenance syringe: 300mg/50mL=6mg/mL
+    // Phase 2 (1mg/min for 6h): 1mg/min × 60 = 60mg/h ÷ 6mg/mL = 10 mL/h
+    // Phase 3 (0.5mg/min for 18h): 0.5 × 60 = 30mg/h ÷ 6mg/mL = 5 mL/h
+    // 24h total: 150 + 360 + 540 = 1050mg ✓ <1200mg
+
+    const bolusDrug = Math.round(weight * 5);
+    const bolusSafe = Math.min(bolusDrug, 150);
+
+    document.getElementById('ami-result').innerHTML = `
+      <div class="dose-result-title">负荷方案（单独注射器）</div>
+      <div class="prep-line">胺碘酮 <span style="color:#185fa5">${bolusSafe} mg</span> + 5% 葡萄糖 → 补至 20 mL，10 min 静注</div>
+      <div class="divider"></div>
+      <div class="dose-result-title">维持方案（50 mL 注射器）</div>
+      <div class="prep-line">胺碘酮 <span style="color:#185fa5">300 mg</span> + 5% 葡萄糖 → 补至 50 mL（浓度 6 mg/mL）</div>
+      <div class="rate-line" style="margin-top:4px;">第 1–6 h：泵速 <span class="rate-highlight">10 mL/h</span>（1 mg/min）</div>
+      <div class="rate-line">第 7–24 h：泵速 <span class="rate-highlight">5 mL/h</span>（0.5 mg/min）</div>
+      <div class="rate-line" style="font-size:12px;color:#888780;margin-top:4px;">24h 总量约 1050 mg（&lt;1200 mg 上限）</div>
+    `;
+
+    document.getElementById('ami-table').innerHTML = `
+      <tr><td>负荷（10 min 静注）</td><td>${bolusSafe} mg</td><td>20 mL 独立注射器推注</td><td>10 min</td></tr>
+      <tr class="highlight"><td>慢速负荷阶段</td><td>1 mg/min（60 mg/h）</td><td>10 mL/h</td><td>6 h</td></tr>
+      <tr><td>维持阶段</td><td>0.5 mg/min（30 mg/h）</td><td>5 mL/h</td><td>18 h</td></tr>
+      <tr><td colspan="2" style="color:#888780;font-size:12px;">24h 总量</td><td colspan="2" style="color:#888780;font-size:12px;">≈ 1050 mg</td></tr>
+    `;
+  }
+</script>
+</body>
+</html>
