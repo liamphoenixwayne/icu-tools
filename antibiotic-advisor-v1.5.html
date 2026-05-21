@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抗感染治疗顾问 v1.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#e3e0d8;--border-s:#cbc8bf;
+  --text:#1a1916;--muted:#68655e;--hint:#a09d96;
+  --green:#1a5c3a;--green-l:#eaf4ee;--green-b:#8ecfab;--green-d:#144d30;
+  --blue:#1a3c6e;--blue-l:#eff6fd;--blue-b:#8dc0f0;
+  --amber:#7a4200;--amber-l:#fff8ec;--amber-b:#f5c040;
+  --red:#7a1c1c;--red-l:#fdf3f3;--red-b:#f0a0a0;
+  --purple:#4a1d6e;--purple-l:#f3eeff;--purple-b:#c4a0f0;
+  --gray-l:#f4f3ef;--r:7px;--r-s:5px;--sh:0 1px 4px rgba(0,0,0,.08)
+}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.65;min-height:100vh;display:flex;flex-direction:column}
+
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20;box-shadow:0 1px 0 var(--border)}
+.hdr-icon{width:32px;height:32px;background:var(--green);border-radius:var(--r-s);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.hdr-ttl{font-size:15px;font-weight:600}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.hdr-ver{margin-left:auto;font-size:10px;color:var(--hint);background:var(--surface2);border:1px solid var(--border);border-radius:30px;padding:2px 8px}
+
+.wrap{flex:1;display:grid;grid-template-columns:430px 1fr;gap:16px;max-width:1320px;margin:0 auto;width:100%;padding:16px;align-items:start}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh)}
+.ph{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.pb{padding:14px}
+
+.field{margin-bottom:12px}.field:last-of-type{margin-bottom:0}
+label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;letter-spacing:.03em}
+select,input{width:100%;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-s);font-family:inherit;font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236a6760' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px;appearance:none}
+select:focus,input:focus{border-color:var(--green);background:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── 病原体块 ── */
+.org-block{border:1px solid var(--border);border-radius:var(--r-s);margin-bottom:8px;background:var(--bg);overflow:hidden;transition:border-color .2s}
+.org-block:last-child{margin-bottom:0}
+.org-block.active{border-color:var(--green-b);background:var(--surface)}
+
+.org-row1{display:flex;align-items:center;gap:6px;padding:8px 10px}
+.org-num{background:var(--green-l);color:var(--green);border-radius:30px;padding:1px 8px;font-size:10px;font-weight:600;flex-shrink:0;line-height:20px}
+.ac-wrap{position:relative;flex:1}
+.org-input{flex:1;width:100%;padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:var(--r-s);font-family:inherit;font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
+.org-input:focus{border-color:var(--green)}
+.org-input::placeholder{color:var(--hint)}
+
+/* 药敏+基因 按钮 */
+.panel-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r-s);
+  font-family:inherit;font-size:12px;font-weight:500;color:var(--muted);
+  cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;
+}
+.panel-btn:hover{border-color:var(--green-b);color:var(--green);background:var(--green-l)}
+.panel-btn.open,.panel-btn.has-data{border-color:var(--green-b);color:var(--green);background:var(--green-l)}
+.panel-btn .cnt{background:var(--green);color:#fff;border-radius:30px;padding:0 5px;font-size:10px;font-weight:600;line-height:16px;display:none}
+.panel-btn.has-data .cnt{display:inline}
+.panel-btn .arr{font-size:10px;opacity:.6;transition:transform .2s}
+.panel-btn.open .arr{transform:rotate(180deg)}
+
+/* 确认行 */
+.org-confirmed{font-size:11px;color:var(--green);padding:0 10px 5px;display:none}
+.org-confirmed.show{display:block}
+
+/* 面板区 */
+.org-panel{padding:0 10px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;border-top:0 solid var(--border)}
+.org-panel.open{max-height:3000px;padding:10px 10px 12px;border-top-width:1px}
+
+/* 面板内分隔 */
+.panel-section{margin-bottom:12px}
+.panel-section:last-child{margin-bottom:0}
+.panel-section-ttl{
+  font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  margin-bottom:7px;padding:4px 8px;border-radius:var(--r-s);display:inline-block;
+}
+.pst-ast{background:var(--blue-l);color:var(--blue)}
+.pst-gene{background:var(--purple-l);color:var(--purple)}
+.panel-hint{font-size:11px;color:var(--hint);margin-bottom:7px;font-style:italic;line-height:1.5}
+
+/* 分组 */
+.grp{margin-bottom:9px}
+.grp:last-child{margin-bottom:0}
+.grp-label{font-size:10px;font-weight:600;color:var(--hint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+.grp-items{display:flex;flex-wrap:wrap;gap:4px}
+
+/* 药物按钮 */
+.drug-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:var(--r-s);
+  font-size:12px;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;border:1px solid var(--border);
+  background:var(--bg);color:var(--muted);
+  transition:all .1s;user-select:none;white-space:nowrap;
+}
+.drug-btn:hover{border-color:var(--border-s);color:var(--text);background:#fff}
+.drug-btn.s-S{background:var(--green-l);color:var(--green);border-color:var(--green-b);font-weight:600}
+.drug-btn.s-R{background:var(--red-l);color:var(--red);border-color:var(--red-b);font-weight:600}
+.drug-btn.s-I{background:var(--amber-l);color:var(--amber);border-color:var(--amber-b);font-weight:600}
+.dbadge{width:16px;height:16px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:rgba(0,0,0,.07);flex-shrink:0}
+.s-S .dbadge{background:var(--green);color:#fff}
+.s-R .dbadge{background:var(--red);color:#fff}
+.s-I .dbadge{background:var(--amber);color:#fff}
+
+/* 基因按钮 */
+.gene-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:var(--r-s);
+  font-size:11px;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;border:1px solid var(--border);
+  background:var(--bg);color:var(--muted);
+  transition:all .1s;user-select:none;white-space:nowrap;
+}
+.gene-btn:hover{border-color:var(--purple-b);color:var(--purple);background:var(--purple-l)}
+.gene-btn.selected{background:var(--purple-l);color:var(--purple);border-color:var(--purple-b);font-weight:600}
+.gene-btn.selected .gbadge{background:var(--purple);color:#fff}
+.gbadge{width:14px;height:14px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;background:rgba(0,0,0,.07);flex-shrink:0}
+
+/* 自动补全 */
+.ac-list{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid var(--green-b);border-radius:var(--r-s);z-index:100;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1);display:none}
+.ac-item{padding:7px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.active{background:var(--green-l);color:var(--green)}
+.ac-sub{font-size:11px;color:var(--hint);margin-top:1px}
+
+/* 操作按钮 */
+.btn-analyze{width:100%;padding:10px;background:var(--green);color:#fff;border:none;border-radius:var(--r-s);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-analyze:hover{background:var(--green-d)}
+.btn-analyze:active{transform:scale(.99)}
+.btn-reset{width:100%;padding:7px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:var(--r-s);font-family:inherit;font-size:13px;cursor:pointer;margin-top:6px;transition:background .15s}
+.btn-reset:hover{background:var(--surface2);color:var(--text)}
+
+/* ── 结果 ── */
+.result-wrap{display:flex;flex-direction:column;gap:14px;padding:14px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--hint);padding:60px 20px;text-align:center}
+.empty-icon{font-size:40px;opacity:.3}
+.disclaimer{background:var(--amber-l);border:1px solid var(--amber-b);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--amber);margin:0 16px 12px}
+
+.rc{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.rc-hdr{padding:11px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface2);border-bottom:1px solid var(--border)}
+.rc-name{font-size:14px;font-weight:600;flex:1;min-width:0}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:30px;font-size:11px;font-weight:500;white-space:nowrap}
+.tag-green{background:var(--green-l);color:var(--green);border:1px solid var(--green-b)}
+.tag-blue{background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-b)}
+.tag-amber{background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-b)}
+.tag-red{background:var(--red-l);color:var(--red);border:1px solid var(--red-b)}
+.tag-purple{background:var(--purple-l);color:var(--purple);border:1px solid var(--purple-b)}
+.tag-gray{background:var(--gray-l);color:var(--muted);border:1px solid var(--border)}
+.rc-body{padding:14px;display:flex;flex-direction:column;gap:12px}
+.sec{background:var(--bg);border-radius:var(--r-s);padding:12px;border:1px solid var(--border)}
+.sec-ttl{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.si{width:16px;height:16px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:10px}
+.si-g{background:var(--green-l);color:var(--green)}
+.si-a{background:var(--amber-l);color:var(--amber)}
+.si-r{background:var(--red-l);color:var(--red)}
+.si-p{background:var(--purple-l);color:var(--purple)}
+.si-x{background:var(--gray-l);color:var(--muted)}
+.drug-row{display:grid;grid-template-columns:20px 1fr;gap:6px 10px;align-items:start;padding:7px 0;border-bottom:1px solid var(--border)}
+.drug-row:last-child{border-bottom:none;padding-bottom:0}
+.dri{font-size:12px;padding-top:2px;text-align:center}
+.dn{font-size:13px;font-weight:600;color:var(--green-d);font-family:'JetBrains Mono',monospace}
+.dd{font-size:12px;color:var(--muted);margin-top:2px}
+.dnt{font-size:11px;color:var(--hint);margin-top:2px;font-style:italic}
+.info-row{font-size:12px;color:var(--muted);padding:3px 0;display:flex;gap:6px}
+.info-row b{color:var(--text);font-weight:600}
+.alert-box{background:var(--red-l);border:1px solid var(--red-b);border-radius:var(--r-s);padding:8px 10px;font-size:12px;color:var(--red);margin-top:4px}
+.warn-box{background:var(--amber-l);border:1px solid var(--amber-b);border-radius:var(--r-s);padding:8px 10px;font-size:12px;color:var(--amber);margin-top:4px}
+.gene-result-box{background:var(--purple-l);border:1px solid var(--purple-b);border-radius:var(--r-s);padding:8px 10px;font-size:12px;color:var(--purple);margin-top:4px}
+.virulence-box{font-size:12px;color:var(--muted);line-height:1.7}
+.virulence-box b{color:var(--text)}
+.ref-text{font-size:11px;color:var(--hint);font-style:italic;margin-top:6px}
+.unknown-org{background:var(--red-l);border:1px solid var(--red-b);border-radius:var(--r-s);padding:8px 10px;font-size:12px;color:var(--red)}
+.ast-summary{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.asp{padding:2px 8px;border-radius:30px;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.asp-S{background:#eaf4ee;color:#1a5c3a;border:1px solid #8ecfab}
+.asp-R{background:#fdf3f3;color:#7a1c1c;border:1px solid #f0a0a0}
+.asp-I{background:#fff8ec;color:#7a4200;border:1px solid #f5c040}
+.gene-pill{padding:2px 8px;border-radius:30px;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;background:var(--purple-l);color:var(--purple);border:1px solid var(--purple-b)}
+.no-data{font-size:12px;color:var(--hint);font-style:italic}
+.footer{text-align:center;padding:14px;font-size:11px;color:var(--hint);border-top:1px solid var(--border);margin-top:auto;background:var(--surface)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-icon">🧫</div>
+  <div>
+    <div class="hdr-ttl">抗感染治疗顾问</div>
+    <div class="hdr-sub">基于IDSA/ATS/SSC 2024–2026等权威指南 · 仅供临床参考</div>
+  </div>
+  <span class="hdr-ver">v1.5</span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="panel">
+      <div class="ph">📋 标本与患者信息</div>
+      <div class="pb">
+        <div class="field">
+          <label>标本类型</label>
+          <select id="specimen">
+            <option value="sputum">痰液</option>
+            <option value="blood">血液</option>
+            <option value="urine">尿液</option>
+            <option value="wound">伤口分泌物</option>
+            <option value="csf">脑脊液</option>
+          </select>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>肾功能</label>
+            <select id="renal">
+              <option value="normal">正常</option>
+              <option value="mild">轻度损伤</option>
+              <option value="moderate">中度损伤</option>
+              <option value="severe">重度损伤</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>过敏史</label>
+            <input id="allergy" type="text" placeholder="如：青霉素、磺胺">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <div class="ph">🔬 病原体 &amp; 药敏基因</div>
+      <div class="pb" id="org-container"></div>
+      <div class="pb" style="padding-top:0">
+        <button class="btn-analyze" onclick="runAnalysis()">🔍 开始分析</button>
+        <button class="btn-reset" onclick="clearAll()">清空重置</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">💊 分析结果</div>
+    <div id="results">
+      <div class="empty">
+        <div class="empty-icon">🧪</div>
+        <div style="font-size:13px;font-weight:500">填写左侧信息后点击分析</div>
+        <div style="font-size:12px;margin-top:4px">输入菌名 → 点击「药敏 &amp; 基因」→ 点选结果 → 开始分析</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  ⚠️ 本工具仅供临床参考，不代替临床判断，所有治疗决策须由临床医生结合患者具体情况综合评估。<br>
+  Designed by 葱头爸爸 · liamphoenixwayne@outlook.com
+</div>
+
+<script>// ============================================================
+//  药敏+耐药基因面板 v1.4
+//  药敏在上，耐药/毒力基因在下，合并一个面板
+// ============================================================
+
+const AST_PANELS = {
+
+  "金黄色葡萄球菌": {
+    ast: [
+      { group:"β-内酰胺类", drugs:["苯唑西林","头孢西丁","青霉素","阿莫西林克拉维酸"] },
+      { group:"糖肽/脂肽类", drugs:["万古霉素","替考拉宁","达托霉素"] },
+      { group:"噁唑烷酮", drugs:["利奈唑胺"] },
+      { group:"其他", drugs:["复方磺胺甲噁唑","克林霉素","红霉素","庆大霉素","利福平","莫西沙星","替加环素"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["mecA","mecC","vanA","vanB","cfr","erm(A)","erm(B)","erm(C)","msrA","dfrA","aac(6')-aph(2'')"] },
+      { group:"毒力基因", genes:["PVL(lukF-PV/lukS-PV)","tst(TSST-1)","eta(表皮剥脱毒素A)","etb(表皮剥脱毒素B)","hla(α溶血素)","fnbA(纤连蛋白结合)","cna(胶原结合)","icaA(生物膜)"] },
+    ]
+  },
+
+  "凝固酶阴性葡萄球菌": {
+    ast: [
+      { group:"β-内酰胺类", drugs:["苯唑西林","头孢西丁"] },
+      { group:"糖肽/脂肽类", drugs:["万古霉素","替考拉宁","达托霉素"] },
+      { group:"噁唑烷酮", drugs:["利奈唑胺"] },
+      { group:"其他", drugs:["复方磺胺甲噁唑","克林霉素","红霉素","庆大霉素","利福平"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["mecA","mecC","vanA","vanB","cfr","icaA(生物膜)","icaD(生物膜)"] },
+    ]
+  },
+
+  "肺炎链球菌": {
+    ast: [
+      { group:"β-内酰胺类", drugs:["青霉素","阿莫西林","头孢曲松","头孢噻肟","美罗培南"] },
+      { group:"大环内酯", drugs:["阿奇霉素","红霉素","克拉霉素"] },
+      { group:"氟喹诺酮", drugs:["左氧氟沙星","莫西沙星"] },
+      { group:"其他", drugs:["万古霉素","利奈唑胺","复方磺胺甲噁唑","多西环素","克林霉素"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["pbp1a突变","pbp2b突变","pbp2x突变","erm(B)","mef(A)","tetM","dfrA"] },
+      { group:"毒力基因", genes:["ply(肺炎球菌溶素)","pspA(表面蛋白A)","pspC/cbpA","pavA","nanA(神经氨酸酶)"] },
+    ]
+  },
+
+  "化脓性链球菌": {
+    ast: [
+      { group:"β-内酰胺类", drugs:["青霉素","阿莫西林","头孢曲松"] },
+      { group:"大环内酯", drugs:["阿奇霉素","红霉素","克拉霉素"] },
+      { group:"其他", drugs:["克林霉素","万古霉素","利奈唑胺"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["erm(A)","erm(B)","mef(A)","tetM"] },
+      { group:"毒力基因", genes:["speA(致热外毒素A)","speB(致热外毒素B)","speC","slo(链球菌溶素O)","spe(链激酶)","prtF1(纤连蛋白结合)"] },
+    ]
+  },
+
+  "无乳链球菌": {
+    ast: [
+      { group:"β-内酰胺类", drugs:["青霉素","氨苄西林","头孢曲松"] },
+      { group:"大环内酯", drugs:["阿奇霉素","红霉素"] },
+      { group:"其他", drugs:["克林霉素","万古霉素","利奈唑胺"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["erm(A)","erm(B)","mef(A)","tetM"] },
+      { group:"毒力基因", genes:["bca(C蛋白α)","bac(C蛋白β)","hylB(透明质酸酶)","cylE(溶血素)","lmb(层粘连蛋白结合)"] },
+    ]
+  },
+
+  "粪肠球菌": {
+    ast: [
+      { group:"β-内酰胺类", drugs:["氨苄西林","青霉素"] },
+      { group:"糖肽类", drugs:["万古霉素","替考拉宁"] },
+      { group:"噁唑烷酮/脂肽", drugs:["利奈唑胺","达托霉素"] },
+      { group:"其他", drugs:["庆大霉素（高水平）","链霉素（高水平）","替加环素","四环素"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["vanA","vanB","vanC","vanD","vanE","vanG","cfr","optrA","poxtA","aac(6')-aph(2'')","aph(3')-III"] },
+      { group:"毒力基因", genes:["cylA(溶血素)","gelE(明胶酶)","esp(表面蛋白)","asa1(聚集物质)","efaA(心内膜炎抗原)","ace(胶原结合)"] },
+    ]
+  },
+
+  "屎肠球菌": {
+    ast: [
+      { group:"β-内酰胺类", drugs:["氨苄西林"] },
+      { group:"糖肽类", drugs:["万古霉素","替考拉宁"] },
+      { group:"噁唑烷酮/脂肽", drugs:["利奈唑胺","达托霉素"] },
+      { group:"其他", drugs:["庆大霉素（高水平）","链霉素（高水平）","替加环素"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["vanA","vanB","vanD","cfr","optrA","poxtA","pbp5突变"] },
+      { group:"毒力基因", genes:["esp(表面蛋白)","hyl(透明质酸酶)","acm(胶原结合)","ecbA"] },
+    ]
+  },
+
+  "大肠埃希菌": {
+    ast: [
+      { group:"青霉素类", drugs:["氨苄西林","哌拉西林他唑巴坦","阿莫西林克拉维酸"] },
+      { group:"头孢菌素", drugs:["头孢唑林","头孢呋辛","头孢曲松","头孢他啶","头孢吡肟","头孢西丁"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","厄他培南"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星","妥布霉素"] },
+      { group:"其他", drugs:["复方磺胺甲噁唑","磷霉素","呋喃妥因","氨曲南","替加环素"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC","blaNDM","blaOXA-48","blaVIM","blaIMP","blaOXA-181","blaOXA-232"] },
+      { group:"ESBL基因", genes:["blaCTX-M-1","blaCTX-M-9","blaCTX-M-14","blaCTX-M-15","blaCTX-M-27","blaSHV","blaTEM-ESBL","blaOXA-1"] },
+      { group:"其他耐药基因", genes:["mcr-1(多黏菌素)","mcr-2","qnrA","qnrB","qnrS","armA(阿米卡星)","rmtB","aac(6')-Ib-cr","dfrA(甲氧苄啶)","sul1","sul2"] },
+      { group:"毒力基因", genes:["stx1(志贺毒素1)","stx2(志贺毒素2)","eae(紧密素/EPEC)","hlyA(溶血素)","cnf1","papC(P菌毛/尿路)","fimH(1型菌毛)","iutA(铁载体)","iss","traT","ibeA(脑膜炎相关)"] },
+    ]
+  },
+
+  "肺炎克雷伯菌": {
+    ast: [
+      { group:"青霉素类", drugs:["哌拉西林他唑巴坦","氨苄西林舒巴坦"] },
+      { group:"头孢菌素", drugs:["头孢唑林","头孢呋辛","头孢曲松","头孢他啶","头孢吡肟","头孢西丁"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","厄他培南"] },
+      { group:"新型β-内酰胺", drugs:["头孢他啶阿维巴坦","头孢地尔","美罗培南法硼巴坦"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星","妥布霉素"] },
+      { group:"其他", drugs:["复方磺胺甲噁唑","替加环素","多黏菌素E","磷霉素"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC-2","blaKPC-3","blaNDM-1","blaNDM-5","blaOXA-48","blaOXA-181","blaOXA-232","blaVIM","blaIMP"] },
+      { group:"ESBL基因", genes:["blaCTX-M-15","blaCTX-M-14","blaCTX-M-9","blaSHV-ESBL","blaTEM-ESBL"] },
+      { group:"其他耐药基因", genes:["mcr-1(多黏菌素)","mcr-2","qnrA","qnrB","qnrS","armA(阿米卡星)","rmtB","oqxAB","aac(6')-Ib-cr"] },
+      { group:"高毒力基因(hvKP)", genes:["rmpA(高毒力调控)","rmpA2","magA(荚膜合成)","iucA(气菌素)","iroB(铁载体)","peg-344","terB(碲酸盐耐受)"] },
+      { group:"其他毒力基因", genes:["fim(1型菌毛)","mrkD(3型菌毛)","entB(肠杆菌素)","kfu(铁摄取)","allS","wabG"] },
+    ]
+  },
+
+  "阴沟肠杆菌": {
+    ast: [
+      { group:"头孢菌素", drugs:["头孢他啶","头孢吡肟","头孢曲松"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","厄他培南"] },
+      { group:"新型β-内酰胺", drugs:["头孢他啶阿维巴坦","头孢地尔"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星"] },
+      { group:"其他", drugs:["哌拉西林他唑巴坦","复方磺胺甲噁唑","替加环素"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC","blaNDM","blaOXA-48","blaVIM","blaIMP"] },
+      { group:"AmpC/ESBL基因", genes:["blaCTX-M","blaSHV","ampC去阻遏突变"] },
+      { group:"其他耐药基因", genes:["armA","rmtB","qnrA","qnrB","mcr-1"] },
+    ]
+  },
+
+  "产气肠杆菌": {
+    ast: [
+      { group:"头孢菌素", drugs:["头孢他啶","头孢吡肟","头孢曲松"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","厄他培南"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星"] },
+      { group:"其他", drugs:["哌拉西林他唑巴坦","复方磺胺甲噁唑","替加环素"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC","blaNDM","blaOXA-48","blaVIM","blaIMP"] },
+      { group:"ESBL/AmpC基因", genes:["blaCTX-M","blaSHV","blaTEM"] },
+      { group:"其他耐药基因", genes:["armA","rmtB","qnrA","qnrB","mcr-1"] },
+    ]
+  },
+
+  "奇异变形杆菌": {
+    ast: [
+      { group:"青霉素/头孢", drugs:["氨苄西林","头孢曲松","头孢他啶","头孢吡肟"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","厄他培南"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星"] },
+      { group:"其他", drugs:["哌拉西林他唑巴坦","复方磺胺甲噁唑","氨曲南"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC","blaNDM","blaVIM","blaIMP"] },
+      { group:"ESBL基因", genes:["blaCTX-M","blaSHV","blaTEM"] },
+      { group:"其他耐药基因", genes:["qnrA","qnrB","armA","rmtB","mcr-1"] },
+    ]
+  },
+
+  "黏质沙雷菌": {
+    ast: [
+      { group:"头孢菌素", drugs:["头孢他啶","头孢吡肟","头孢曲松"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","厄他培南"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星"] },
+      { group:"其他", drugs:["哌拉西林他唑巴坦","复方磺胺甲噁唑","替加环素"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC","blaNDM","blaOXA-48","blaVIM","blaIMP"] },
+      { group:"ESBL/AmpC基因", genes:["blaCTX-M","blaSHV","blaTEM","ampC去阻遏"] },
+      { group:"其他耐药基因", genes:["armA","rmtB","qnrA","qnrB"] },
+      { group:"毒力基因", genes:["shlA(溶血素)","fliC(鞭毛)","hasA(荚膜)"] },
+    ]
+  },
+
+  "柠檬酸杆菌": {
+    ast: [
+      { group:"头孢菌素", drugs:["头孢他啶","头孢吡肟"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","厄他培南"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星"] },
+      { group:"其他", drugs:["哌拉西林他唑巴坦","复方磺胺甲噁唑"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC","blaNDM","blaOXA-48","blaVIM","blaIMP"] },
+      { group:"ESBL/AmpC基因", genes:["blaCTX-M","blaSHV","blaTEM","ampC去阻遏"] },
+    ]
+  },
+
+  "摩根摩根菌": {
+    ast: [
+      { group:"头孢菌素", drugs:["头孢他啶","头孢吡肟"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["阿米卡星"] },
+      { group:"其他", drugs:["哌拉西林他唑巴坦","复方磺胺甲噁唑","氨曲南"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaKPC","blaNDM","blaVIM","blaIMP"] },
+      { group:"ESBL基因", genes:["blaCTX-M","blaSHV","blaTEM"] },
+      { group:"其他耐药基因", genes:["armA","qnrA","qnrB","aac(2')-Ic"] },
+    ]
+  },
+
+  "铜绿假单胞菌": {
+    ast: [
+      { group:"抗假单胞β-内酰胺", drugs:["哌拉西林他唑巴坦","头孢他啶","头孢吡肟","氨曲南"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","多利培南"] },
+      { group:"新型β-内酰胺", drugs:["头孢他啶阿维巴坦","头孢洛扎他唑巴坦","头孢地尔","亚胺培南瑞来巴坦"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","妥布霉素","阿米卡星"] },
+      { group:"多黏菌素", drugs:["多黏菌素E","多黏菌素B"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因", genes:["blaVIM","blaIMP","blaNDM","blaKPC","blaGES"] },
+      { group:"β-内酰胺酶基因", genes:["blaOXA-50","blaOXA-395","blaPDC(AmpC过表达)","blaGES-ESBL"] },
+      { group:"其他耐药基因", genes:["armA(阿米卡星高水平)","rmtB","rmtC","aac(6')-Ib","mexAB-oprM过表达","mexCD-oprJ","mexXY过表达","oprD缺失(碳青霉烯)","qnrVC","fosA"] },
+      { group:"毒力基因", genes:["exoS(III型分泌ExoS)","exoT(III型分泌ExoT)","exoU(高毒力/细胞毒)","exoY","algD(藻酸盐/生物膜)","lasR(群体感应)","pelB(Pel多糖)","pslA(Psl多糖)","aprA(碱性蛋白酶)","toxA(外毒素A)","plcH(磷脂酶C)"] },
+    ]
+  },
+
+  "鲍曼不动杆菌": {
+    ast: [
+      { group:"β-内酰胺/舒巴坦", drugs:["氨苄西林舒巴坦","头孢哌酮舒巴坦","舒巴坦达巴坦"] },
+      { group:"碳青霉烯", drugs:["美罗培南","亚胺培南","多利培南"] },
+      { group:"新型β-内酰胺", drugs:["头孢地尔"] },
+      { group:"四环素类", drugs:["米诺环素","多西环素","替加环素"] },
+      { group:"氟喹诺酮", drugs:["环丙沙星","左氧氟沙星"] },
+      { group:"氨基糖苷", drugs:["庆大霉素","阿米卡星","妥布霉素"] },
+      { group:"多黏菌素", drugs:["多黏菌素E","多黏菌素B"] },
+      { group:"其他", drugs:["复方磺胺甲噁唑","利福平"] },
+    ],
+    genes: [
+      { group:"碳青霉烯酶基因(CRAB关键)", genes:["blaOXA-23","blaOXA-24/40","blaOXA-51(固有)","blaOXA-58","blaOXA-143","blaOXA-235","blaNDM","blaVIM","blaIMP","blaKPC"] },
+      { group:"其他β-内酰胺酶", genes:["blaADC(AmpC)","blaVEB","blaPER","blaGES","blaTEM","blaSHV"] },
+      { group:"其他耐药基因", genes:["armA(阿米卡星高水平)","rmtB","aac(6')-Ib","aph(3')-Via","tet(B)","sul1","sul2","qnrA","mcr-1","IS-Aba1(OXA-51上游激活)","ISAba1(OXA-23上游)"] },
+      { group:"毒力基因", genes:["bap(生物膜)","ompA(外膜蛋白/凋亡)","craA(多药外排)","pgaB(多糖生物膜)","ptk(荚膜)","epsA(荚膜)","csuA/B(菌毛)","plcD(磷脂酶)","lip(脂肪酶)"] },
+    ]
+  },
+
+  "嗜麦芽窄食单胞菌": {
+    ast: [
+      { group:"首选", drugs:["复方磺胺甲噁唑","左氧氟沙星","米诺环素"] },
+      { group:"新型β-内酰胺", drugs:["头孢地尔","头孢他啶阿维巴坦"] },
+      { group:"其他", drugs:["替卡西林克拉维酸","头孢他啶","氯霉素"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["blaL1(MBL固有)","blaL2(头孢菌素酶固有)","smqnr(喹诺酮)","smeABC(外排泵)","smeDEF(外排泵)","sul1","dfrA","mcr-1"] },
+      { group:"毒力基因", genes:["StmPr1(蛋白酶)","smf-1(菌毛)","virulence plasmid pSN1T"] },
+    ]
+  },
+
+  "洋葱伯克霍尔德菌": {
+    ast: [
+      { group:"主要药物", drugs:["复方磺胺甲噁唑","美罗培南","左氧氟沙星","米诺环素","头孢他啶"] },
+    ],
+    genes: [
+      { group:"耐药基因", genes:["blaOXA-57","blaKPC","penA突变","oprD缺失","bpeAB-oprB(外排)","bpeEF-oprC(外排)"] },
+    ]
+  },
+
+  // ── 非典型/厌氧（无药敏，仅基因参考）──
+  "军团菌": {
+    ast: [ { group:"体外药敏参考", drugs:["左氧氟沙星","阿奇霉素","多西环素"] } ],
+    genes: [ { group:"检测参考（无常规耐药基因）", genes:["mip(毒力标志)","dotA(IV型分泌)","lvhB(Lvh质粒)","lpg0716(鞭毛)"] } ]
+  },
+  "支原体": {
+    ast: [ { group:"体外药敏参考", drugs:["多西环素","阿奇霉素","左氧氟沙星","莫西沙星"] } ],
+    genes: [ { group:"耐药基因", genes:["23S rRNA突变(大环内酯耐药)","gyrA突变(喹诺酮耐药)","parC突变(喹诺酮耐药)"] } ]
+  },
+  "衣原体": {
+    ast: [ { group:"体外药敏参考", drugs:["多西环素","阿奇霉素","左氧氟沙星"] } ],
+    genes: [ { group:"检测参考", genes:["ompA(外膜蛋白分型)","tetC突变"] } ]
+  },
+  "鹦鹉热衣原体": {
+    ast: [ { group:"体外药敏参考", drugs:["多西环素","阿奇霉素"] } ],
+    genes: [ { group:"检测参考", genes:["ompA(基因型A-F分型)","tet(C)(四环素耐药，罕见)"] } ]
+  },
+  "脆弱拟杆菌": {
+    ast: [ { group:"药敏参考", drugs:["甲硝唑","哌拉西林他唑巴坦","美罗培南","克林霉素"] } ],
+    genes: [ { group:"耐药基因", genes:["nim(甲硝唑耐药)","cepA(头孢菌素酶)","cfxA","blaOXA-1","tetQ","erm(B)","erm(F)","linA"] },
+             { group:"毒力基因", genes:["bft(脆弱拟杆菌毒素/BFT1/2/3)","fraB","mpII"] } ]
+  },
+  "产气荚膜梭菌": {
+    ast: [ { group:"药敏参考", drugs:["青霉素","克林霉素","甲硝唑"] } ],
+    genes: [ { group:"毒力基因", genes:["cpa(α毒素/必要毒力)","cpb(β毒素)","etx(ε毒素)","iap(ι毒素)","cpe(肠毒素)","netB(坏死性肠炎毒素)","pfoA(θ溶血素)"] } ]
+  },
+  "艰难梭菌": {
+    ast: [ { group:"注意", drugs:["万古霉素（口服）","非达霉素","甲硝唑"] } ],
+    genes: [ { group:"毒力基因", genes:["tcdA(毒素A)","tcdB(毒素B/关键)","cdtA(二元毒素)","cdtB","tcdC突变(高毒力ribotype 027)"] },
+             { group:"耐药基因", genes:["vanB(万古霉素耐药，罕见)","erm(B)(克林霉素)","tetM"] } ]
+  },
+
+  // ── 真菌 ──
+  "白念珠菌": {
+    ast: [
+      { group:"唑类", drugs:["氟康唑","伏立康唑","伊曲康唑","泊沙康唑"] },
+      { group:"棘白菌素", drugs:["卡泊芬净","米卡芬净","阿尼芬净"] },
+      { group:"多烯类", drugs:["两性霉素B"] },
+    ],
+    genes: [ { group:"耐药基因", genes:["ERG11突变(唑类耐药)","FKS1突变(棘白菌素耐药)","FKS2突变","CDR1过表达","MDR1过表达","TAC1(CDR调控)"] } ]
+  },
+  "光滑念珠菌": {
+    ast: [
+      { group:"唑类", drugs:["氟康唑","伏立康唑"] },
+      { group:"棘白菌素", drugs:["卡泊芬净","米卡芬净","阿尼芬净"] },
+      { group:"多烯类", drugs:["两性霉素B"] },
+    ],
+    genes: [ { group:"耐药基因", genes:["FKS1突变(棘白菌素耐药)","FKS2突变","PDR1突变(唑类外排上调)","CgCDR1","CgCDR2"] } ]
+  },
+  "热带念珠菌": {
+    ast: [
+      { group:"唑类", drugs:["氟康唑","伏立康唑"] },
+      { group:"棘白菌素", drugs:["卡泊芬净","米卡芬净","阿尼芬净"] },
+      { group:"多烯类", drugs:["两性霉素B"] },
+    ],
+    genes: [ { group:"耐药基因", genes:["ERG11突变","FKS1突变","MDR1过表达"] } ]
+  },
+  "近平滑念珠菌": {
+    ast: [
+      { group:"唑类", drugs:["氟康唑","伏立康唑"] },
+      { group:"棘白菌素", drugs:["卡泊芬净","米卡芬净","阿尼芬净"] },
+      { group:"多烯类", drugs:["两性霉素B"] },
+    ],
+    genes: [ { group:"耐药基因", genes:["FKS1 P660突变(棘白菌素，天然降敏)","ERG11突变","MDR1过表达"] } ]
+  },
+  "克柔念珠菌": {
+    ast: [
+      { group:"唑类（天然耐药氟康唑）", drugs:["伏立康唑","泊沙康唑"] },
+      { group:"棘白菌素", drugs:["卡泊芬净","米卡芬净","阿尼芬净"] },
+      { group:"多烯类", drugs:["两性霉素B"] },
+    ],
+    genes: [ { group:"耐药基因", genes:["KER1(天然氟康唑耐药)","FKS1突变(棘白菌素耐药)","ERG11突变"] } ]
+  },
+  "耳念珠菌": {
+    ast: [
+      { group:"棘白菌素（首选）", drugs:["卡泊芬净","米卡芬净","阿尼芬净"] },
+      { group:"唑类", drugs:["氟康唑","伏立康唑"] },
+      { group:"多烯类", drugs:["两性霉素B"] },
+    ],
+    genes: [ { group:"耐药基因（高度警惕）", genes:["FKS1突变(棘白菌素耐药)","ERG11 Y132F/K143R突变(唑类高水平耐药)","ERG11 F126L","MDR1过表达"] } ]
+  },
+  "曲霉菌": {
+    ast: [
+      { group:"唑类", drugs:["伏立康唑","伊曲康唑","泊沙康唑","艾沙康唑"] },
+      { group:"棘白菌素", drugs:["卡泊芬净","米卡芬净"] },
+      { group:"多烯类", drugs:["两性霉素B脂质体"] },
+    ],
+    genes: [ { group:"唑类耐药基因（高度重要）", genes:["cyp51A TR34/L98H(泛唑类耐药)","cyp51A TR46/Y121F/T289A","cyp51A G54突变(伊曲/泊沙耐药)","cyp51A M220突变","cyp51A G138C"] } ]
+  },
+
+  // ── 无体外药敏病原体 ──
+  "卡氏肺孢子菌": {
+    ast: [ { group:"治疗药物（无体外药敏）", drugs:["复方磺胺甲噁唑"] } ],
+    genes: [ { group:"耐药基因", genes:["dhps突变(磺胺耐药)","dhfr突变(甲氧苄啶耐药)","cyb突变(阿托伐醌耐药)"] } ]
+  },
+  "流感病毒": {
+    ast: [ { group:"治疗药物（无体外药敏）", drugs:["奥司他韦","帕拉米韦"] } ],
+    genes: [ { group:"耐药基因", genes:["NA H275Y(奥司他韦耐药/H1N1)","NA R292K(H3N2)","NA E119V","PA I38T(巴洛沙韦耐药)","M2 S31N(金刚烷胺耐药)"] } ]
+  },
+  "SARS-CoV-2": {
+    ast: [ { group:"治疗药物（无体外药敏）", drugs:["奈玛特韦利托那韦","瑞德西韦"] } ],
+    genes: [ { group:"突变位点", genes:["nsp5 A156T(奈玛特韦耐药)","nsp5 E166V","nsp5 L50F","nsp12 P323L","spike变异(免疫逃逸)"] } ]
+  },
+  "CMV": {
+    ast: [ { group:"治疗药物（无体外药敏）", drugs:["更昔洛韦","缬更昔洛韦","膦甲酸钠"] } ],
+    genes: [ { group:"耐药基因", genes:["UL97突变(更昔洛韦耐药/激酶)","UL54突变(更昔洛韦/膦甲酸/西多福韦耐药/DNA聚合酶)","UL97 C592G","UL97 A594V","UL97 H520Q"] } ]
+  },
+  "HSV": {
+    ast: [ { group:"治疗药物（无体外药敏）", drugs:["阿昔洛韦","伐昔洛韦","膦甲酸钠"] } ],
+    genes: [ { group:"耐药基因", genes:["TK基因突变/缺失(阿昔洛韦耐药)","TK A168T","TK G59R","UL30突变(膦甲酸耐药/DNA聚合酶)"] } ]
+  },
+  "VZV": {
+    ast: [ { group:"治疗药物（无体外药敏）", drugs:["阿昔洛韦","伐昔洛韦","膦甲酸钠"] } ],
+    genes: [ { group:"耐药基因", genes:["TK基因突变(阿昔洛韦耐药，主要见于免疫低下)","ORF28突变(DNA聚合酶/膦甲酸耐药)"] } ]
+  },
+};
+</script>
+<script>// ============================================================
+//  ANTIBIOTIC ADVISOR — KNOWLEDGE BASE
+//  指南来源标注见每条推荐
+// ============================================================
+
+const KB = {
+
+  // ── 1. 病原体分类库 ─────────────────────────────────────────
+  organisms: {
+    // 革兰阳性球菌
+    "金黄色葡萄球菌": { gram:"+", type:"cocci", family:"staph", aliases:["staphylococcus aureus","s. aureus","金葡菌","金黄色葡萄球"] },
+    "凝固酶阴性葡萄球菌": { gram:"+", type:"cocci", family:"staph", aliases:["coagulase negative staph","cons","表皮葡萄球菌","staphylococcus epidermidis","溶血葡萄球菌","s. epidermidis"] },
+    "肺炎链球菌": { gram:"+", type:"cocci", family:"strep", aliases:["streptococcus pneumoniae","s. pneumoniae","pneumococcus"] },
+    "化脓性链球菌": { gram:"+", type:"cocci", family:"strep", aliases:["streptococcus pyogenes","s. pyogenes","group a strep","gas"] },
+    "无乳链球菌": { gram:"+", type:"cocci", family:"strep", aliases:["streptococcus agalactiae","s. agalactiae","group b strep","gbs"] },
+    "屎肠球菌": { gram:"+", type:"cocci", family:"entero", aliases:["enterococcus faecium","e. faecium"] },
+    "粪肠球菌": { gram:"+", type:"cocci", family:"entero", aliases:["enterococcus faecalis","e. faecalis"] },
+    // 革兰阴性杆菌 - 肠杆菌目
+    "大肠埃希菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["escherichia coli","e. coli","大肠杆菌"] },
+    "肺炎克雷伯菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["klebsiella pneumoniae","k. pneumoniae","克雷伯","克雷伯菌"] },
+    "阴沟肠杆菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["enterobacter cloacae","e. cloacae"] },
+    "产气肠杆菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["klebsiella aerogenes","enterobacter aerogenes"] },
+    "奇异变形杆菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["proteus mirabilis","p. mirabilis"] },
+    "黏质沙雷菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["serratia marcescens","s. marcescens"] },
+    "柠檬酸杆菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["citrobacter","citrobacter freundii"] },
+    "摩根摩根菌": { gram:"-", type:"bacilli", family:"entero_gn", aliases:["morganella morganii","m. morganii"] },
+    // 革兰阴性杆菌 - 非发酵
+    "铜绿假单胞菌": { gram:"-", type:"bacilli", family:"nonferment", aliases:["pseudomonas aeruginosa","p. aeruginosa","铜绿","假单胞菌"] },
+    "鲍曼不动杆菌": { gram:"-", type:"bacilli", family:"nonferment", aliases:["acinetobacter baumannii","a. baumannii","不动杆菌","鲍曼"] },
+    "嗜麦芽窄食单胞菌": { gram:"-", type:"bacilli", family:"nonferment", aliases:["stenotrophomonas maltophilia","s. maltophilia","嗜麦芽"] },
+    "洋葱伯克霍尔德菌": { gram:"-", type:"bacilli", family:"nonferment", aliases:["burkholderia cepacia","b. cepacia"] },
+    // 特殊/非典型
+    "军团菌": { gram:"-", type:"bacilli", family:"atypical", aliases:["legionella pneumophila","legionella","legionellosis"] },
+    "支原体": { gram:"na", type:"atypical", family:"atypical", aliases:["mycoplasma pneumoniae","mycoplasma","肺炎支原体"] },
+    "衣原体": { gram:"na", type:"atypical", family:"atypical", aliases:["chlamydia pneumoniae","chlamydophila pneumoniae","肺炎衣原体"] },
+    "鹦鹉热衣原体": { gram:"na", type:"atypical", family:"atypical", aliases:["chlamydia psittaci","chlamydophila psittaci","psittacosis","鹦鹉热"] },
+    // 厌氧菌
+    "脆弱拟杆菌": { gram:"-", type:"anaerobe", family:"anaerobe", aliases:["bacteroides fragilis","b. fragilis","拟杆菌"] },
+    "产气荚膜梭菌": { gram:"+", type:"anaerobe", family:"anaerobe", aliases:["clostridium perfringens","c. perfringens"] },
+    "艰难梭菌": { gram:"+", type:"anaerobe", family:"anaerobe", aliases:["clostridioides difficile","clostridium difficile","c. diff","c. difficile","艰难"] },
+    // 真菌
+    "白念珠菌": { gram:"na", type:"fungi", family:"candida", aliases:["candida albicans","c. albicans","白色念珠菌"] },
+    "光滑念珠菌": { gram:"na", type:"fungi", family:"candida", aliases:["candida glabrata","nakaseomyces glabrata","c. glabrata","光滑假丝酵母"] },
+    "热带念珠菌": { gram:"na", type:"fungi", family:"candida", aliases:["candida tropicalis","c. tropicalis"] },
+    "近平滑念珠菌": { gram:"na", type:"fungi", family:"candida", aliases:["candida parapsilosis","c. parapsilosis"] },
+    "克柔念珠菌": { gram:"na", type:"fungi", family:"candida", aliases:["candida krusei","pichia kudriavzevii","c. krusei"] },
+    "耳念珠菌": { gram:"na", type:"fungi", family:"candida", aliases:["candida auris","c. auris"] },
+    "卡氏肺孢子菌": { gram:"na", type:"fungi", family:"pcp", aliases:["pneumocystis jirovecii","pcp","pneumocystis","卡氏肺孢子"] },
+    "曲霉菌": { gram:"na", type:"fungi", family:"mold", aliases:["aspergillus","aspergillus fumigatus","a. fumigatus","曲霉"] },
+    // 病毒
+    "流感病毒": { gram:"na", type:"virus", family:"influenza", aliases:["influenza","influenza a","influenza b","流感","甲流","乙流"] },
+    "SARS-CoV-2": { gram:"na", type:"virus", family:"covid", aliases:["covid-19","covid","coronavirus","sars-cov-2","新冠"] },
+    "CMV": { gram:"na", type:"virus", family:"herpes", aliases:["cytomegalovirus","巨细胞病毒","cmv"] },
+    "HSV": { gram:"na", type:"virus", family:"herpes", aliases:["herpes simplex","hsv","herpes simplex virus","单纯疱疹","单纯疱疹病毒"] },
+    "VZV": { gram:"na", type:"virus", family:"herpes", aliases:["varicella zoster","vzv","varicella-zoster","水痘","带状疱疹"] },
+  },
+
+  // ── 2. 药物名称标准化映射 ────────────────────────────────────
+  drugAliases: {
+    // 万古霉素
+    "万古霉素":["vancomycin","万古"],
+    // 利奈唑胺
+    "利奈唑胺":["linezolid"],
+    // 达托霉素
+    "达托霉素":["daptomycin"],
+    // 替加环素
+    "替加环素":["tigecycline"],
+    // 青霉素类
+    "青霉素":["penicillin","pen","pcn"],
+    "阿莫西林":["amoxicillin"],
+    "氨苄西林":["ampicillin"],
+    "阿莫西林克拉维酸":["amoxicillin-clavulanate","amoxicillin/clavulanate","augmentin","阿莫西林/克拉维酸","阿莫克拉"],
+    "氨苄西林舒巴坦":["ampicillin-sulbactam","ampicillin/sulbactam","舒氨西林"],
+    "哌拉西林他唑巴坦":["piperacillin-tazobactam","piperacillin/tazobactam","pip/tazo","pip-tazo","哌拉西林/他唑巴坦","哌他"],
+    // 头孢菌素
+    "头孢唑林":["cefazolin","cefazoline"],
+    "头孢呋辛":["cefuroxime"],
+    "头孢曲松":["ceftriaxone"],
+    "头孢噻肟":["cefotaxime"],
+    "头孢他啶":["ceftazidime"],
+    "头孢吡肟":["cefepime"],
+    "头孢西丁":["cefoxitin"],
+    "头孢替坦":["cefotetan"],
+    "头孢他啶阿维巴坦":["ceftazidime-avibactam","ceftazidime/avibactam","caz-avi","头孢他啶/阿维巴坦"],
+    "头孢洛扎他唑巴坦":["ceftolozane-tazobactam","ceftolozane/tazobactam","col-tazo"],
+    "头孢地尔":["cefiderocol"],
+    "苯唑西林":["oxacillin"],
+    "氯唑西林":["cloxacillin"],
+    // 碳青霉烯
+    "亚胺培南":["imipenem","imipenem-cilastatin","imipenem/cilastatin","亚胺培南/西司他丁"],
+    "美罗培南":["meropenem"],
+    "厄他培南":["ertapenem"],
+    "多利培南":["doripenem"],
+    "亚胺培南瑞来巴坦":["imipenem-cilastatin-relebactam","imipenem/relebactam","瑞来巴坦"],
+    "美罗培南法硼巴坦":["meropenem-vaborbactam","meropenem/vaborbactam","法硼巴坦"],
+    // 氨基糖苷类
+    "庆大霉素":["gentamicin"],
+    "妥布霉素":["tobramycin"],
+    "阿米卡星":["amikacin","amikacin sulfate"],
+    // 氟喹诺酮
+    "环丙沙星":["ciprofloxacin","cipro"],
+    "左氧氟沙星":["levofloxacin","levaquin","左氧"],
+    "莫西沙星":["moxifloxacin"],
+    // 大环内酯
+    "阿奇霉素":["azithromycin"],
+    "克拉霉素":["clarithromycin"],
+    "红霉素":["erythromycin"],
+    // 四环素类
+    "多西环素":["doxycycline"],
+    "米诺环素":["minocycline"],
+    "依拉环素":["eravacycline"],
+    // 磺胺类
+    "复方磺胺甲噁唑":["trimethoprim-sulfamethoxazole","tmp-smx","co-trimoxazole","smz","复方新诺明","磺胺甲噁唑","tmp/smx"],
+    // 多黏菌素
+    "多黏菌素B":["polymyxin b","polymyxin-b"],
+    "多黏菌素E":["colistin","polymyxin e","黏菌素"],
+    // 舒巴坦相关
+    "头孢哌酮舒巴坦":["cefoperazone-sulbactam","cefoperazone/sulbactam","舒普深","头孢哌酮/舒巴坦"],
+    "舒巴坦达巴坦":["sulbactam-durlobactam","sulbactam/durlobactam"],
+    // 氨曲南
+    "氨曲南":["aztreonam"],
+    "氨曲南阿维巴坦":["aztreonam-avibactam","aztreonam/avibactam"],
+    // 磷霉素
+    "磷霉素":["fosfomycin"],
+    // 克林霉素
+    "克林霉素":["clindamycin"],
+    // 甲硝唑
+    "甲硝唑":["metronidazole","metro","flagyl"],
+    // 抗真菌
+    "氟康唑":["fluconazole"],
+    "伏立康唑":["voriconazole"],
+    "伊曲康唑":["itraconazole"],
+    "泊沙康唑":["posaconazole"],
+    "卡泊芬净":["caspofungin"],
+    "米卡芬净":["micafungin"],
+    "阿尼芬净":["anidulafungin"],
+    "两性霉素B":["amphotericin b","amphotericin","amphob"],
+    "两性霉素B脂质体":["liposomal amphotericin b","l-amph","lamb","liposomal amphotericin"],
+    // 抗病毒
+    "奥司他韦":["oseltamivir","tamiflu"],
+    "阿昔洛韦":["acyclovir","aciclovir"],
+    "伐昔洛韦":["valacyclovir","valaciclovir"],
+    "更昔洛韦":["ganciclovir"],
+    "缬更昔洛韦":["valganciclovir"],
+    "膦甲酸钠":["foscarnet"],
+    "奈玛特韦利托那韦":["nirmatrelvir/ritonavir","nirmatrelvir-ritonavir","paxlovid","奈玛特韦/利托那韦"],
+    "瑞德西韦":["remdesivir"],
+  },
+
+  // ── 3. 致病性/毒力评估文本（供医生参考）────────────────────
+  virulenceText: {
+    "金黄色葡萄球菌": `
+      <b>参考标准（Mandell第9版；IDSA MRSA指南2011）</b><br>
+      金黄色葡萄球菌在大多数标本中具有明确致病意义，但需结合临床判断。
+      <b>高毒力提示因素：</b>①菌落数量多、培养阳性（尤其血培养≥2套阳性）；
+      ②伴有发热、WBC升高、CRP/PCT升高等感染指标；
+      ③影像学或临床体征提示活动性感染。
+      <b>需鉴别定植的情况：</b>痰培养阳性但无肺炎影像学/临床表现；
+      皮肤标本阳性但无蜂窝织炎/脓肿体征。
+      <b>高毒力表型标志（如有条件检测）：</b>PVL（Panton-Valentine leukocidin）阳性提示
+      坏死性肺炎/皮肤软组织感染风险显著增加（社区相关MRSA）。
+      血培养阳性金葡菌应始终视为致病菌，需积极寻找感染灶。
+    `,
+    "凝固酶阴性葡萄球菌": `
+      <b>参考标准（IDSA血培养指南；Mandell第9版）</b><br>
+      凝固酶阴性葡萄球菌（CoNS）是最常见的血培养污染菌，判断须谨慎。
+      <b>提示真正感染的因素：</b>①多套血培养（≥2套中≥2套）同一菌株阳性；
+      ②有血管内装置（CVC/起搏器/人工瓣膜）；
+      ③骨髓抑制/免疫低下宿主；
+      ④伴有感染临床表现。
+      <b>提示污染的因素：</b>单套阳性、采血操作欠规范、无感染临床表现。
+      <b>结论：</b>临床医生须综合判断，工具无法代替临床决策。
+    `,
+    "肺炎克雷伯菌": `
+      <b>参考标准（IDSA AMR指南2024；Siu et al. CID 2011）</b><br>
+      肺炎克雷伯菌是ICU重要致病菌，需鉴别经典型与高毒力型（hvKP）。
+      <b>高毒力肺炎克雷伯菌（hvKP）提示：</b>
+      ①拉丝试验（string test）阳性（菌落可拉出≥5mm黏液丝）；
+      ②肝脓肿（尤其亚洲患者）；③血源性播散（眼内炎、脑脓肿）；
+      ④基因标志：rmpA/rmpA2、magA（需分子检测）。
+      hvKP即使对碳青霉烯敏感，也因毒力强、播散快而需积极治疗。
+      <b>注意：hvKP可同时携带耐药基因（CR-hvKP），治疗难度极大。</b>
+    `,
+    "铜绿假单胞菌": `
+      <b>参考标准（IDSA AMR指南2024；ATS/IDSA HAP/VAP指南2016）</b><br>
+      铜绿假单胞菌在ICU患者中定植/感染的鉴别尤为重要。
+      <b>提示感染（而非定植）的因素：</b>①临床感染征象（发热、脓性分泌物、WBC/PCT升高）；
+      ②血培养阳性；③组织侵袭性病变。
+      <b>痰培养阳性的解读：</b>2016 IDSA/ATS VAP指南明确指出，痰液半定量培养
+      特异性约50%，须结合临床/影像学诊断。
+      <b>耐药监测：</b>铜绿假单胞菌天然具有多种耐药机制，药敏结果对治疗方案
+      选择至关重要，见下方耐药表型分析。
+    `,
+    "鲍曼不动杆菌": `
+      <b>参考标准（IDSA AMR指南2024；WHO细菌优先病原体名单2024）</b><br>
+      鲍曼不动杆菌是环境/皮肤常见菌，ICU中定植/感染鉴别困难。
+      IDSA 2024明确强调：<b>对于CRAB，区分定植和感染尤为重要，
+      非必要的抗菌治疗加剧耐药性发展且给患者带来额外毒性。</b>
+      <b>提示感染的因素：</b>①血培养阳性；②无菌标本（胸腔积液/脑脊液）阳性；
+      ③有明确感染病灶且标本质量可靠；④新发感染征象且排除其他原因。
+      <b>痰培养阳性需高度谨慎：</b>需有肺炎影像学证据及临床表现方可判定VAP。
+      鲍曼不动杆菌是全球五大耐药死亡病原体之一（WHO 2024），
+      CRAB感染治疗选择极为有限。
+    `,
+    "嗜麦芽窄食单胞菌": `
+      <b>参考标准（IDSA AMR指南2024）</b><br>
+      嗜麦芽窄食单胞菌常见于ICU长期住院及抗菌药物暴露患者。
+      IDSA 2024明确强调：<b>对于嗜麦芽窄食单胞菌，区分定植和感染非常重要，
+      常用经验性方案对其无效，经验性覆盖须谨慎权衡风险-获益。</b>
+      <b>提示感染的因素：</b>血培养阳性、无菌标本阳性、伴感染征象的下呼吸道感染。
+      天然对碳青霉烯类耐药，本身敏感谱窄，治疗须基于药敏。
+    `,
+    "肠球菌": `
+      <b>参考标准（IDSA相关指南；Mandell第9版）</b><br>
+      肠球菌（粪肠球菌/屎肠球菌）在不同标本中意义不同。
+      <b>血培养阳性：</b>始终视为致病菌，需积极处理。
+      <b>尿培养阳性：</b>是尿路感染常见病原体，需结合症状判断。
+      <b>痰培养/伤口标本：</b>多为定植，除非伴有明确感染征象和部位特异性证据。
+      <b>屎肠球菌 vs 粪肠球菌：</b>屎肠球菌耐药率更高（VRE更常见），
+      粪肠球菌对氨苄西林通常敏感。
+    `,
+    "念珠菌": `
+      <b>参考标准（IDSA念珠菌病指南2016）</b><br>
+      念珠菌在不同标本中致病意义差异显著。
+      <b>血培养阳性（念珠菌血症）：</b>始终视为致病菌，需立即启动治疗，
+      同时寻找感染源（腹腔、CVAD等）。
+      <b>痰培养阳性：</b>几乎均为定植，IDSA指南不推荐仅因痰培养阳性治疗。
+      <b>尿培养阳性（念珠菌尿）：</b>多为定植，无症状菌尿一般不需治疗；
+      中性粒细胞减少、接受泌尿外科手术者需评估治疗必要性。
+      <b>高危因素（提示侵袭性念珠菌病）：</b>中性粒细胞减少、长期抗菌药物使用、
+      全肠外营养、多部位定植、腹腔手术、ICU长期住院。
+    `,
+    "卡氏肺孢子菌": `
+      <b>参考标准（NIH OI指南2024）</b><br>
+      卡氏肺孢子菌（PCP）几乎仅见于免疫低下患者，培养/PCR阳性结合临床
+      具有明确致病意义。
+      <b>高危宿主：</b>①HIV/AIDS（CD4 &lt;200/μL）；②长期皮质激素使用；
+      ③器官移植受者；④血液系统恶性肿瘤接受化疗；⑤生物制剂使用。
+      <b>非HIV患者病死率更高（约48-53%）。</b>
+      诊断依据：BAL或痰液PCR/银染阳性+典型影像（双侧毛玻璃影）+
+      临床表现（进行性低氧、干咳）。
+    `,
+    "default": `
+      <b>通用原则（Mandell第9版；相关IDSA指南）</b><br>
+      判断培养结果临床意义需综合以下因素：<br>
+      ①<b>标本质量</b>：留取方式、污染可能性；<br>
+      ②<b>标本类型</b>：无菌标本（血液/脑脊液/胸腔积液）阳性意义远高于非无菌标本；<br>
+      ③<b>临床表现</b>：是否有感染体征（发热、炎症指标升高等）；<br>
+      ④<b>宿主因素</b>：免疫状态、基础疾病、近期抗菌药物使用；<br>
+      ⑤<b>菌量</b>：定量培养时菌落数量是否达到感染阈值。<br>
+      临床医生须综合判断，本工具建议仅供参考。
+    `
+  },
+
+  // ── 4. 耐药表型识别规则 ─────────────────────────────────────
+  resistancePhenotypes: {
+    MRSA: {
+      label:"MRSA",
+      color:"red",
+      desc:"耐甲氧西林金黄色葡萄球菌",
+      detect: (drugMap) => {
+        const ox = drugMap["苯唑西林"] || drugMap["氯唑西林"];
+        const cefox = drugMap["头孢西丁"];
+        return (ox==="R") || (cefox==="R");
+      },
+      ref:"CLSI M100-2024"
+    },
+    MSSA: {
+      label:"MSSA",
+      color:"green",
+      desc:"甲氧西林敏感金黄色葡萄球菌",
+      detect: (drugMap) => {
+        const ox = drugMap["苯唑西林"] || drugMap["氯唑西林"];
+        const cefox = drugMap["头孢西丁"];
+        return (ox==="S") || (cefox==="S");
+      },
+      ref:"CLSI M100-2024"
+    },
+    VRE: {
+      label:"VRE",
+      color:"red",
+      desc:"耐万古霉素肠球菌",
+      detect: (drugMap) => drugMap["万古霉素"]==="R",
+      ref:"CLSI M100-2024"
+    },
+    ESBL: {
+      label:"ESBL",
+      color:"amber",
+      desc:"超广谱β-内酰胺酶肠杆菌目",
+      detect: (drugMap) => {
+        const ctx = drugMap["头孢噻肟"];
+        const cro = drugMap["头孢曲松"];
+        const caz = drugMap["头孢他啶"];
+        const r = [ctx,cro,caz].filter(v=>v==="R"||v==="I");
+        return r.length >= 1;
+      },
+      ref:"IDSA AMR 2024; CLSI M100-2024"
+    },
+    AMPC: {
+      label:"AmpC",
+      color:"amber",
+      desc:"AmpC β-内酰胺酶（去阻遏/诱导型）",
+      detect: (drugMap, organism) => {
+        const ampcOrgs = ["阴沟肠杆菌","产气肠杆菌","黏质沙雷菌","柠檬酸杆菌","摩根摩根菌"];
+        const isAmpcOrganism = ampcOrgs.some(o => organism.includes(o));
+        const cefox = drugMap["头孢西丁"];
+        return isAmpcOrganism || cefox==="R";
+      },
+      ref:"IDSA AMR 2024"
+    },
+    CRE: {
+      label:"CRE",
+      color:"red",
+      desc:"耐碳青霉烯肠杆菌目",
+      detect: (drugMap) => {
+        const mem = drugMap["美罗培南"];
+        const imp = drugMap["亚胺培南"];
+        const ert = drugMap["厄他培南"];
+        return (mem==="R") || (imp==="R") || (ert==="R");
+      },
+      ref:"CDC/CLSI定义; IDSA AMR 2024"
+    },
+    DTR_PA: {
+      label:"DTR-PA",
+      color:"red",
+      desc:"难治性铜绿假单胞菌（对所有传统β-内酰胺类、氟喹诺酮及碳青霉烯均耐药）",
+      detect: (drugMap) => {
+        const pipTazo = drugMap["哌拉西林他唑巴坦"];
+        const caz = drugMap["头孢他啶"];
+        const cefepime = drugMap["头孢吡肟"];
+        const aztreonam = drugMap["氨曲南"];
+        const mem = drugMap["美罗培南"];
+        const imp = drugMap["亚胺培南"];
+        const cip = drugMap["环丙沙星"];
+        const levo = drugMap["左氧氟沙星"];
+        const betas = [pipTazo,caz,cefepime,aztreonam].filter(v=>v==="R");
+        const carbs = [mem,imp].filter(v=>v==="R");
+        const fqs = [cip,levo].filter(v=>v==="R");
+        return betas.length>=2 && carbs.length>=1 && fqs.length>=1;
+      },
+      ref:"IDSA AMR 2024"
+    },
+    CRPA: {
+      label:"CRPA",
+      color:"amber",
+      desc:"耐碳青霉烯铜绿假单胞菌",
+      detect: (drugMap) => {
+        const mem = drugMap["美罗培南"];
+        const imp = drugMap["亚胺培南"];
+        return (mem==="R") || (imp==="R");
+      },
+      ref:"CDC/CLSI; IDSA AMR 2024"
+    },
+    CRAB: {
+      label:"CRAB",
+      color:"red",
+      desc:"耐碳青霉烯鲍曼不动杆菌",
+      detect: (drugMap) => {
+        const mem = drugMap["美罗培南"];
+        const imp = drugMap["亚胺培南"];
+        return (mem==="R") || (imp==="R");
+      },
+      ref:"CDC/CLSI; IDSA AMR 2024"
+    },
+    LRSA: {
+      label:"利奈唑胺耐药",
+      color:"red",
+      desc:"利奈唑胺耐药葡萄球菌",
+      detect: (drugMap) => drugMap["利奈唑胺"]==="R",
+      ref:"CLSI M100-2024"
+    }
+  },
+
+  // ── 5. 治疗推荐数据库 ────────────────────────────────────────
+  //  格式: organism → phenotype → specimen → { preferred[], alternative[], duration, notes, ref }
+  //  specimen: blood/sputum/urine/wound/csf/general
+  treatments: {
+
+    // ═══ 革兰阳性 ═══
+
+    "金黄色葡萄球菌": {
+      "MRSA": {
+        general: {
+          preferred:[
+            { drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h（依肾功能调整）", note:"目标AUC/MIC 400–600 mg·h/L，建议药学TDM监测" },
+          ],
+          alternative:[
+            { drug:"利奈唑胺", dose:"600 mg IV/PO q12h" },
+            { drug:"达托霉素", dose:"6 mg/kg IV qd（菌血症/心内膜炎）；肺炎不可用（被肺泡表面活性物质灭活）" },
+          ],
+          duration:"菌血症≥14天；复杂感染/心内膜炎4–6周",
+          notes:"肺炎建议万古霉素或利奈唑胺（IDSA 2016 HAP/VAP），HAP/VAP疗程7天",
+          ref:"IDSA MRSA指南2011; ASHP/IDSA万古霉素TDM共识2020; IDSA/ATS HAP/VAP 2016"
+        },
+        csf: {
+          preferred:[{ drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h，监测AUC/MIC" }],
+          alternative:[{ drug:"利奈唑胺", dose:"600 mg IV/PO q12h（CNS穿透性优）" }],
+          duration:"脑膜炎≥14天",
+          ref:"IDSA MRSA指南2011"
+        }
+      },
+      "MSSA": {
+        general: {
+          preferred:[
+            { drug:"苯唑西林/氯唑西林", dose:"2g IV q4h" },
+            { drug:"头孢唑林", dose:"2g IV q8h（耐受性更好，可替代苯唑西林）" },
+          ],
+          alternative:[
+            { drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h（仅在β-内酰胺不耐受时使用）" },
+          ],
+          duration:"菌血症≥14天；心内膜炎4–6周",
+          notes:"MSSA首选β-内酰胺类，万古霉素疗效劣于苯唑西林，避免首选",
+          ref:"IDSA MRSA指南2011"
+        }
+      },
+      "未知": {
+        general: {
+          preferred:[{ drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h（覆盖MRSA）" }],
+          alternative:[{ drug:"苯唑西林", dose:"2g IV q4h（待药敏确认MSSA后降阶梯）" }],
+          ref:"IDSA MRSA指南2011"
+        }
+      }
+    },
+
+    "凝固酶阴性葡萄球菌": {
+      "MRSA": {
+        general: {
+          preferred:[{ drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h，AUC/MIC 400–600" }],
+          alternative:[{ drug:"利奈唑胺", dose:"600 mg IV/PO q12h" }],
+          duration:"导管相关菌血症移除CVAD后≥7天；保留装置≥14天",
+          notes:"若怀疑污染菌，建议先确认多套血培养阳性再启动治疗",
+          ref:"ASHP/IDSA万古霉素TDM共识2020; IDSA MRSA指南2011"
+        }
+      },
+      "MSSA": {
+        general: {
+          preferred:[{ drug:"苯唑西林", dose:"2g IV q4h" },{ drug:"头孢唑林", dose:"2g IV q8h" }],
+          duration:"同上",
+          ref:"IDSA MRSA指南2011"
+        }
+      }
+    },
+
+    "肺炎链球菌": {
+      "青霉素敏感": {
+        general: {
+          preferred:[{ drug:"青霉素G", dose:"1–2×10⁶U IV q4h" },{ drug:"阿莫西林", dose:"1g IV/PO q8h" }],
+          alternative:[{ drug:"头孢曲松", dose:"2g IV qd" }],
+          duration:"非菌血症肺炎5–7天；菌血症/脑膜炎10–14天",
+          ref:"IDSA/ATS CAP指南2019"
+        }
+      },
+      "青霉素耐药": {
+        general: {
+          preferred:[{ drug:"头孢曲松", dose:"2g IV qd（MIC≤1μg/mL有效）" }],
+          alternative:[{ drug:"左氧氟沙星", dose:"750mg IV/PO qd" },{ drug:"莫西沙星", dose:"400mg IV/PO qd" }],
+          ref:"IDSA/ATS CAP指南2019"
+        },
+        csf: {
+          preferred:[{ drug:"头孢曲松", dose:"2g IV q12h" },{ drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h（联合，高度耐药时）" }],
+          duration:"脑膜炎10–14天",
+          ref:"IDSA脑膜炎指南2004更新版"
+        }
+      },
+      "未知": {
+        general: {
+          preferred:[{ drug:"头孢曲松", dose:"1–2g IV qd" },{ drug:"阿莫西林克拉维酸", dose:"1.2g IV q8h" }],
+          ref:"IDSA/ATS CAP指南2019"
+        }
+      }
+    },
+
+    "化脓性链球菌": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"青霉素G", dose:"100–400万U IV q4–6h" }],
+          alternative:[{ drug:"阿莫西林克拉维酸", dose:"1.2g IV q8h" },{ drug:"克林霉素", dose:"600mg IV q8h（用于坏死性筋膜炎辅助，抑制毒素生成）" }],
+          duration:"轻症10天；侵袭性感染14天；坏死性筋膜炎手术+抗菌直至创面控制",
+          ref:"IDSA SSTI指南2014"
+        }
+      }
+    },
+
+    "粪肠球菌": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"氨苄西林", dose:"2g IV q4–6h" }],
+          alternative:[{ drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h（β-内酰胺过敏时）" }],
+          duration:"尿路感染7–14天；菌血症≥14天；心内膜炎4–6周",
+          notes:"氨苄西林对粪肠球菌通常有效；屎肠球菌须单独评估",
+          ref:"IDSA肠球菌相关指南; Mandell第9版"
+        }
+      },
+      "VRE": {
+        general: {
+          preferred:[{ drug:"利奈唑胺", dose:"600 mg IV/PO q12h" },{ drug:"达托霉素", dose:"6 mg/kg IV qd（菌血症）" }],
+          duration:"菌血症≥14天",
+          ref:"Mandell第9版; IDSA相关指南"
+        }
+      }
+    },
+
+    "屎肠球菌": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"万古霉素", dose:"15–20 mg/kg IV q8–12h（氨苄西林耐药率高）" }],
+          alternative:[{ drug:"利奈唑胺", dose:"600 mg IV/PO q12h" }],
+          ref:"Mandell第9版"
+        }
+      },
+      "VRE": {
+        general: {
+          preferred:[{ drug:"利奈唑胺", dose:"600 mg IV/PO q12h" },{ drug:"达托霉素", dose:"6–8 mg/kg IV qd" }],
+          duration:"菌血症≥14天",
+          ref:"Mandell第9版; IDSA指南"
+        }
+      }
+    },
+
+    // ═══ 大肠埃希菌 / 克雷伯 / 肠杆菌目（按耐药表型）═══
+
+    "大肠埃希菌": {
+      "敏感": {
+        general: {
+          preferred:[{ drug:"头孢曲松", dose:"1–2g IV qd" },{ drug:"哌拉西林他唑巴坦", dose:"4.5g IV q6–8h" }],
+          alternative:[{ drug:"环丙沙星", dose:"400mg IV q8–12h（药敏敏感时）" }],
+          duration:"菌血症14天；尿路感染7–14天；肺炎7天",
+          ref:"IDSA AMR指南2024; IDSA/ATS CAP/HAP/VAP指南"
+        }
+      },
+      "ESBL": {
+        general: {
+          preferred:[
+            { drug:"厄他培南", dose:"1g IV qd（非ICU）" },
+            { drug:"美罗培南", dose:"1g IV q8h（重症/脓毒症）" },
+          ],
+          alternative:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h，碳青霉烯不耐受时）" },
+            { drug:"复方磺胺甲噁唑", dose:"TMP 160mg/SMX 800mg PO q12h（仅药敏敏感且血流动力学稳定时降阶梯）" },
+          ],
+          duration:"同上",
+          notes:"IDSA 2024：ESBL-E首选碳青霉烯；血流动力学稳定、敏感时可考虑TMP-SMX或喹诺酮降阶梯",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）——适用KPC型CRE" },
+          ],
+          alternative:[
+            { drug:"氨曲南阿维巴坦", dose:"联合方案——适用MBL型CRE（如NDM）" },
+            { drug:"美罗培南法硼巴坦", dose:"4g IV q8h（延长输注3h）——KPC型" },
+            { drug:"亚胺培南瑞来巴坦", dose:"1.25g IV q6h——KPC型" },
+            { drug:"多黏菌素E", dose:"参考药敏及肾功能调整，联合方案（最后手段）" },
+          ],
+          duration:"疗程同感染类型，不因耐药延长",
+          notes:"CRE治疗方案选择依赖耐药机制（KPC vs MBL vs OXA）。强烈建议感染科会诊。",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE_KPC": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）" },
+            { drug:"美罗培南法硼巴坦", dose:"4g IV q8h（延长输注3h）" },
+          ],
+          alternative:[
+            { drug:"亚胺培南瑞来巴坦", dose:"1.25g IV q6h" },
+          ],
+          notes:"blaKPC基因确认——头孢他啶阿维巴坦或美罗培南法硼巴坦首选",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE_MBL": {
+        general: {
+          preferred:[
+            { drug:"氨曲南阿维巴坦 + 氨曲南", dose:"氨曲南阿维巴坦2.5g q8h（延长输注3h）联合氨曲南2g q6h" },
+          ],
+          alternative:[
+            { drug:"头孢地尔", dose:"2g IV q8h（延长输注3h）" },
+            { drug:"多黏菌素E联合", dose:"最后手段，联合替加环素/磷霉素" },
+          ],
+          notes:"blaNDM/VIM/IMP基因确认——MBL型对头孢他啶阿维巴坦/美罗培南法硼巴坦耐药！须用氨曲南阿维巴坦方案",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE_OXA48": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）" },
+          ],
+          alternative:[
+            { drug:"美罗培南法硼巴坦", dose:"4g IV q8h（OXA-48活性有限，次选）" },
+            { drug:"头孢地尔", dose:"2g IV q8h" },
+          ],
+          notes:"blaOXA-48/OXA-181/OXA-232基因确认——首选头孢他啶阿维巴坦",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+    },
+
+    "肺炎克雷伯菌": {
+      "敏感": {
+        general: {
+          preferred:[{ drug:"头孢曲松", dose:"1–2g IV qd" },{ drug:"头孢吡肟", dose:"2g IV q8–12h（重症）" }],
+          alternative:[{ drug:"哌拉西林他唑巴坦", dose:"4.5g IV q6–8h" }],
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "ESBL": { general: { preferred:[ { drug:"厄他培南", dose:"1g IV qd（非ICU）" }, { drug:"美罗培南", dose:"1g IV q8h（重症/脓毒症）" }], ref:"IDSA AMR指南2024" } },
+      "CRE": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）——KPC/OXA-48" },
+            { drug:"美罗培南法硼巴坦", dose:"4g IV q8h——KPC型" },
+          ],
+          alternative:[
+            { drug:"氨曲南阿维巴坦（联合）", dose:"MBL（NDM/VIM/IMP）型CRE" },
+            { drug:"头孢地尔", dose:"2g IV q8h（延长输注3h），多重耐药难治情况" },
+          ],
+          notes:"强烈建议明确碳青霉烯酶型别（KPC/MBL/OXA），指导精准选药。感染科会诊。",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE_KPC": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）" },
+            { drug:"美罗培南法硼巴坦", dose:"4g IV q8h（延长输注3h）" },
+          ],
+          alternative:[
+            { drug:"亚胺培南瑞来巴坦", dose:"1.25g IV q6h" },
+          ],
+          notes:"blaKPC基因确认——精准治疗，避免无效用药",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE_MBL": {
+        general: {
+          preferred:[
+            { drug:"氨曲南阿维巴坦 + 氨曲南", dose:"氨曲南阿维巴坦2.5g q8h（延长3h）+ 氨曲南2g q6h联合" },
+          ],
+          alternative:[
+            { drug:"头孢地尔", dose:"2g IV q8h（延长输注3h）" },
+          ],
+          notes:"blaNDM/VIM/IMP基因确认——MBL型CRE，头孢他啶阿维巴坦无效！唯一可靠方案为氨曲南阿维巴坦联合氨曲南",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE_OXA48": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）" },
+          ],
+          alternative:[
+            { drug:"头孢地尔", dose:"2g IV q8h" },
+            { drug:"多黏菌素E", dose:"最后手段，肾毒性大" },
+          ],
+          notes:"blaOXA-48系列基因确认",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+    },
+
+    "阴沟肠杆菌": {
+      "敏感": {
+        general: {
+          preferred:[{ drug:"头孢吡肟", dose:"2g IV q8h（诱导型AmpC可去阻遏，避免三代头孢）" }],
+          alternative:[{ drug:"哌拉西林他唑巴坦", dose:"4.5g IV q6h（重症慎用，AmpC去阻遏风险）" }, { drug:"美罗培南", dose:"1g IV q8h（重症首选）" }],
+          notes:"阴沟肠杆菌等AmpC菌群：三代头孢（头孢曲松/头孢噻肟）有诱导去阻遏耐药风险，避免单独使用",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "CRE": { general: { preferred:[ { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h" }], ref:"IDSA AMR指南2024" } }
+    },
+
+    // ═══ 铜绿假单胞菌 ═══
+    "铜绿假单胞菌": {
+      "敏感": {
+        general: {
+          preferred:[
+            { drug:"哌拉西林他唑巴坦", dose:"4.5g IV q6h（延长输注4h）" },
+            { drug:"头孢他啶", dose:"2g IV q8h" },
+            { drug:"头孢吡肟", dose:"2g IV q8h（延长输注4h）" },
+          ],
+          alternative:[
+            { drug:"美罗培南", dose:"1–2g IV q8h（延长输注3h）——保留碳青霉烯，非首选" },
+            { drug:"环丙沙星", dose:"400mg IV q8–12h（药敏敏感时）" },
+          ],
+          notes:"IDSA 2024：敏感PA优先使用传统β-内酰胺类，保护碳青霉烯活性",
+          ref:"IDSA AMR指南2024; SSC 2026"
+        }
+      },
+      "CRPA": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）" },
+            { drug:"头孢洛扎他唑巴坦", dose:"1.5g IV q8h（延长输注）" },
+          ],
+          alternative:[
+            { drug:"哌拉西林他唑巴坦（大剂量延长）", dose:"4.5g IV q6h（延长输注4h，仅药敏敏感时）" },
+            { drug:"阿米卡星", dose:"15–20 mg/kg IV qd（仅尿路感染/辅助联合）" },
+          ],
+          notes:"耐碳青霉烯PA：优先新型β-内酰胺/β-内酰胺酶抑制剂复合制剂",
+          ref:"IDSA AMR指南2024"
+        }
+      },
+      "DTR_PA": {
+        general: {
+          preferred:[
+            { drug:"头孢他啶阿维巴坦", dose:"2.5g IV q8h（延长输注3h）" },
+            { drug:"头孢洛扎他唑巴坦", dose:"1.5g IV q8h（延长输注）" },
+            { drug:"头孢地尔", dose:"2g IV q8h（延长输注3h）——多重耐药PA" },
+          ],
+          alternative:[
+            { drug:"多黏菌素E联合", dose:"最后手段，联合其他活性药物" },
+          ],
+          duration:"按感染类型，HAP/VAP 7天",
+          notes:"DTR-PA：对所有传统β-内酰胺、氟喹诺酮及碳青霉烯均耐药。强烈建议感染科会诊。",
+          ref:"IDSA AMR指南2024"
+        }
+      }
+    },
+
+    // ═══ 鲍曼不动杆菌 ═══
+    "鲍曼不动杆菌": {
+      "敏感": {
+        general: {
+          preferred:[
+            { drug:"氨苄西林舒巴坦", dose:"3g IV q6h（延长输注）——舒巴坦对不动杆菌有固有活性" },
+            { drug:"头孢哌酮舒巴坦", dose:"3g IV q6–8h（延长输注）" },
+          ],
+          alternative:[
+            { drug:"美罗培南", dose:"1–2g IV q8h（延长输注3h）" },
+            { drug:"多西环素/米诺环素", dose:"100mg IV/PO q12h（药敏敏感时）" },
+          ],
+          ref:"IDSA AMR指南2024; Mandell第9版"
+        }
+      },
+      "CRAB": {
+        general: {
+          preferred:[
+            { drug:"舒巴坦达巴坦 + 美罗培南", dose:"舒巴坦达巴坦1g IV q6h（延长3h）+ 美罗培南2g IV q8h（延长输注）" },
+          ],
+          alternative:[
+            { drug:"头孢地尔", dose:"2g IV q8h（延长输注3h）" },
+            { drug:"多黏菌素E + 美罗培南 + 替加环素", dose:"三联方案（舒巴坦达巴坦不可及时的最后手段）" },
+            { drug:"多西环素/米诺环素", dose:"100mg IV/PO q12h（药敏敏感时辅助）" },
+          ],
+          duration:"按感染类型，HAP/VAP 7天",
+          notes:"CRAB治疗极为有限，舒巴坦达巴坦为IDSA 2024首选新药，多黏菌素肾毒性大。强烈建议感染科会诊。",
+          ref:"IDSA AMR指南2024"
+        }
+      }
+    },
+
+    // ═══ 嗜麦芽窄食单胞菌 ═══
+    "嗜麦芽窄食单胞菌": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"复方磺胺甲噁唑", dose:"TMP 5mg/kg IV q6–8h（标准治疗）" },
+          ],
+          alternative:[
+            { drug:"左氧氟沙星", dose:"750mg IV/PO qd（药敏敏感时）" },
+            { drug:"米诺环素", dose:"200mg IV/PO q12h（首剂），后100mg q12h（药敏敏感时）" },
+            { drug:"头孢地尔", dose:"2g IV q8h（难治性感染）" },
+          ],
+          duration:"7–14天",
+          notes:"嗜麦芽窄食单胞菌天然对碳青霉烯耐药（IMP金属酶），所有方案须基于药敏结果",
+          ref:"IDSA AMR指南2024"
+        }
+      }
+    },
+
+    // ═══ 非典型病原体 ═══
+    "军团菌": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"左氧氟沙星", dose:"750mg IV/PO qd（重症首选）" },
+            { drug:"阿奇霉素", dose:"500mg IV/PO qd（重症肺炎ICU：联合β-内酰胺类）" },
+          ],
+          alternative:[{ drug:"多西环素", dose:"100mg IV/PO q12h" }],
+          duration:"轻症5天；重症10–21天",
+          notes:"军团菌肺炎ICU患者：IDSA/ATS CAP 2019推荐β-内酰胺+阿奇霉素，或呼吸喹诺酮",
+          ref:"IDSA/ATS CAP指南2019"
+        }
+      }
+    },
+    "支原体": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"阿奇霉素", dose:"500mg IV/PO qd（重症肺炎联合β-内酰胺类）" },
+            { drug:"左氧氟沙星", dose:"750mg IV/PO qd" },
+          ],
+          alternative:[{ drug:"多西环素", dose:"100mg IV/PO q12h" }],
+          duration:"5–7天",
+          notes:"非典型病原体CAP：IDSA/ATS CAP 2019推荐联合方案（β-内酰胺+大环内酯）覆盖非典型病原体",
+          ref:"IDSA/ATS CAP指南2019"
+        }
+      }
+    },
+    "衣原体": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"阿奇霉素", dose:"500mg IV/PO qd" },
+            { drug:"多西环素", dose:"100mg IV/PO q12h" },
+          ],
+          alternative:[{ drug:"左氧氟沙星", dose:"750mg IV/PO qd" }],
+          duration:"5–7天",
+          ref:"IDSA/ATS CAP指南2019"
+        }
+      }
+    },
+    "鹦鹉热衣原体": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"多西环素", dose:"100mg IV/PO q12h（首选，有效率高）" },
+          ],
+          alternative:[
+            { drug:"阿奇霉素", dose:"500mg IV/PO qd（多西环素禁忌时）" },
+          ],
+          duration:"轻症14天；重症/ICU延长至21天",
+          notes:"【证据级别说明】鹦鹉热衣原体无正式RCT证据，无独立IDSA专项指南。推荐基于：Mandell第9版（Schlossberg, 2020）、CDC鹦鹉热处置建议及中国ICU重症鹦鹉热病例系列（He et al., Front Physiol, 2023, mNGS确诊31例，多西环素治疗有效）。临床医生需结合病情自行判断。",
+          ref:"Mandell第9版; CDC鹦鹉热建议; He et al. Front Physiol 2023"
+        }
+      }
+    },
+
+    // ═══ 厌氧菌 ═══
+    "脆弱拟杆菌": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"甲硝唑", dose:"500mg IV/PO q8h" },{ drug:"哌拉西林他唑巴坦", dose:"4.5g IV q6–8h（包含厌氧覆盖）" }],
+          alternative:[{ drug:"美罗培南/亚胺培南", dose:"标准剂量（重症腹腔感染）" }],
+          duration:"腹腔感染7–10天（充分手术引流后）",
+          notes:"SSC 2026新推荐：低风险肺/尿路感染不需覆盖厌氧菌；腹腔/妇科/坏死性软组织感染须覆盖",
+          ref:"SSC 2026; IDSA腹腔感染指南2010"
+        }
+      }
+    },
+    "艰难梭菌": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"万古霉素（口服）", dose:"125mg PO q6h × 10天（非重症首发）" },{ drug:"非达霉素", dose:"200mg PO q12h × 10天（复发高风险）" }],
+          alternative:[{ drug:"甲硝唑（口服）", dose:"500mg PO q8h × 10天（仅轻症且无其他选择时）" }],
+          duration:"10–14天",
+          notes:"艰难梭菌感染：万古霉素口服（非静脉）或非达霉素。重症：万古霉素500mg PO q6h±甲硝唑IV。",
+          ref:"IDSA/SHEA CDI指南2021更新版"
+        }
+      }
+    },
+
+    // ═══ 真菌 ═══
+    "念珠菌": {
+      "未知": {
+        blood: {
+          preferred:[
+            { drug:"卡泊芬净", dose:"首剂70mg IV，后50mg IV qd（ICU非中性粒细胞减少患者首选）" },
+            { drug:"米卡芬净", dose:"100mg IV qd" },
+            { drug:"阿尼芬净", dose:"首剂200mg IV，后100mg IV qd" },
+          ],
+          alternative:[
+            { drug:"氟康唑", dose:"800mg（12mg/kg）IV/PO 负荷，后400mg（6mg/kg）qd——仅血流动力学稳定、非危重、氟康唑非耐药菌种" },
+          ],
+          duration:"念珠菌血症：末次阳性血培养后≥14天（需每日血培养直至转阴）",
+          notes:"念珠菌血症须移除所有可移除的血管内装置。光滑念珠菌/克柔念珠菌固有氟康唑耐药，须用棘白菌素。耳念珠菌对多类抗真菌药耐药，建议感染科会诊。",
+          ref:"IDSA念珠菌病指南2016"
+        },
+        general: {
+          preferred:[
+            { drug:"卡泊芬净", dose:"首剂70mg IV，后50mg IV qd" },
+            { drug:"米卡芬净", dose:"100mg IV qd" },
+          ],
+          alternative:[{ drug:"氟康唑", dose:"400–800mg IV/PO qd（敏感菌种且非危重）" }],
+          duration:"2–4周（视感染类型）",
+          ref:"IDSA念珠菌病指南2016"
+        }
+      }
+    },
+    "白念珠菌": { "未知": { blood: { preferred:[{ drug:"棘白菌素类", dose:"同念珠菌血症方案；稳定后可降阶梯至氟康唑400mg/d" }], ref:"IDSA念珠菌病指南2016" }, general: { preferred:[{ drug:"氟康唑", dose:"400mg IV/PO qd（非危重，药敏确认敏感）" }], ref:"IDSA念珠菌病指南2016" } } },
+    "光滑念珠菌": { "未知": { general: { preferred:[{ drug:"棘白菌素类（优先）", dose:"天然氟康唑耐药率高，不推荐氟康唑" }], ref:"IDSA念珠菌病指南2016" } } },
+    "克柔念珠菌": { "未知": { general: { preferred:[{ drug:"棘白菌素类（优先）", dose:"天然氟康唑耐药，禁用氟康唑" }], ref:"IDSA念珠菌病指南2016" } } },
+    "耳念珠菌": { "未知": { general: { preferred:[{ drug:"棘白菌素类", dose:"强烈建议感染科会诊+药敏指导，多重耐药" }], notes:"耳念珠菌对唑类、多烯类常耐药；棘白菌素相对敏感但耐药报道增多。需严格接触隔离。", ref:"IDSA念珠菌病指南2016; CDC耳念珠菌建议" } } },
+
+    "卡氏肺孢子菌": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"复方磺胺甲噁唑（TMP-SMX）", dose:"TMP 15–20 mg/kg/d + SMX 75–100 mg/kg/d，分q6–8h IV/PO × 21天" },
+          ],
+          alternative:[
+            { drug:"克林霉素 + 伯氨喹", dose:"克林霉素600mg IV q6h + 伯氨喹30mg PO qd（中重度，TMP-SMX不耐受时）" },
+            { drug:"喷他脒", dose:"4mg/kg IV qd（严重过敏或不耐受）" },
+          ],
+          duration:"21天（HIV患者）；非HIV患者同等疗程",
+          notes:"中重度PCP（PaO₂<70mmHg 或 A-a梯度>35mmHg）：联合泼尼松40–60mg PO bid×5天→20mg bid×5天→20mg qd×11天。肾功能不全需按CrCl调整TMP-SMX剂量。",
+          ref:"NIH OI指南2024; IDSA PCP相关推荐"
+        }
+      }
+    },
+
+    "曲霉菌": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"伏立康唑", dose:"6mg/kg IV q12h × 2剂（负荷），后4mg/kg IV q12h（维持）；稳定后口服200mg q12h" }],
+          alternative:[{ drug:"两性霉素B脂质体", dose:"3–5mg/kg IV qd（伏立康唑不耐受/耐药时）" },{ drug:"泊沙康唑", dose:"300mg IV/PO qd（稳定后预防/维持）" }],
+          duration:"≥6–12周（视免疫恢复情况）",
+          notes:"侵袭性曲霉病死亡率高，免疫低下宿主需优先考虑。伏立康唑监测血药浓度（目标1–5.5mg/L）。",
+          ref:"IDSA曲霉病指南2016; ESCMID指南2017"
+        }
+      }
+    },
+
+    // ═══ 病毒 ═══
+    "流感病毒": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"奥司他韦", dose:"75mg PO bid × 5天；ICU重症建议延长至10天" }],
+          alternative:[{ drug:"帕拉米韦", dose:"600mg IV qd × 1–5天（无法口服时）" }],
+          duration:"标准5天；ICU/免疫低下延长",
+          notes:"WHO 2024指南：重症流感推荐奥司他韦标准剂量（75mg bid），不推荐双倍剂量。尽早用药（起病48h内最优），但住院重症患者超48h仍应使用。继发细菌感染（尤其金葡菌肺炎）须同时覆盖。",
+          ref:"IDSA流感指南2018; WHO流感临床实践指南2024"
+        }
+      }
+    },
+
+    "SARS-CoV-2": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"奈玛特韦/利托那韦（Paxlovid）", dose:"奈玛特韦300mg + 利托那韦100mg PO bid × 5天（轻中度，高风险进展患者）" },
+            { drug:"瑞德西韦", dose:"200mg IV qd（负荷）→100mg IV qd × 4天（住院需氧患者）" },
+          ],
+          alternative:[
+            { drug:"地塞米松", dose:"6mg IV/PO qd × 10天（需机械通气或高流量吸氧患者）——非抗病毒，免疫调节" },
+          ],
+          duration:"见各药方案",
+          notes:"IDSA COVID-19 Living指南2025：重症需氧患者：瑞德西韦+地塞米松±巴瑞替尼（JAK抑制剂）。奈玛特韦/利托那韦注意药物相互作用（CYP3A4）。",
+          ref:"IDSA COVID-19 Living指南2025"
+        }
+      }
+    },
+
+    "CMV": {
+      "未知": {
+        general: {
+          preferred:[
+            { drug:"更昔洛韦", dose:"5mg/kg IV q12h（诱导期，2–3周）；后维持5mg/kg IV qd" },
+            { drug:"缬更昔洛韦", dose:"900mg PO bid（病情允许口服，生物利用度60%）" },
+          ],
+          alternative:[
+            { drug:"膦甲酸钠", dose:"60mg/kg IV q8h 或 90mg/kg IV q12h（肾毒性大，骨髓抑制禁忌时用）" },
+            { drug:"马立巴韦", dose:"400mg PO bid（难治性/耐药CMV，移植患者）" },
+          ],
+          duration:"诱导期2–3周；维持期≥4周或至免疫恢复",
+          notes:"CMV治疗主要针对免疫低下患者（器官移植、造血干细胞移植、HIV/AIDS）。非免疫低下ICU患者CMV再激活的治疗指征存在争议，不常规推荐。监测CMV病毒载量指导疗程。",
+          ref:"Kotton et al. 第四版国际CMV共识指南2023; ASTCT造血干细胞移植CMV指南2025"
+        }
+      }
+    },
+
+    "HSV": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"阿昔洛韦", dose:"10mg/kg IV q8h（HSV脑炎/播散性感染）× 14–21天" }],
+          alternative:[{ drug:"膦甲酸钠", dose:"60mg/kg IV q8h（阿昔洛韦耐药，尤见于HIV患者）" }],
+          duration:"HSV脑炎21天；播散性感染14–21天",
+          notes:"IDSA 2008脑炎指南：所有疑似脑炎患者等待诊断结果期间立即启动经验性阿昔洛韦。肾功能不全须减量并充分水化。",
+          ref:"IDSA脑炎管理指南2008（Tunkel et al., CID 2008）"
+        },
+        csf: {
+          preferred:[{ drug:"阿昔洛韦", dose:"10mg/kg IV q8h × 21天" }],
+          duration:"21天",
+          ref:"IDSA脑炎管理指南2008"
+        }
+      }
+    },
+
+    "VZV": {
+      "未知": {
+        general: {
+          preferred:[{ drug:"阿昔洛韦", dose:"10mg/kg IV q8h × 7–10天（播散性/CNS/重症免疫低下患者）" }],
+          alternative:[{ drug:"膦甲酸钠", dose:"60mg/kg IV q8h（阿昔洛韦耐药，主要见于HIV晚期）" }],
+          duration:"播散性/CNS感染7–10天（免疫低下可延长）",
+          notes:"皮肤局限性带状疱疹（免疫正常）可口服伐昔洛韦/泛昔洛韦，无需ICU方案。ICU相关：播散性VZV、VZV脑炎/脑膜炎须静脉阿昔洛韦。",
+          ref:"CDC临床指导; IDSA HIV/OI指南; Mandell第9版"
+        }
+      }
+    },
+
+  }, // end treatments
+
+  // ── 6. 肾功能调整提示 ────────────────────────────────────────
+  renalAdjust: {
+    "万古霉素":   { mild:"延长间隔至q12–24h，依TDM调整", moderate:"q24–48h，严格TDM", severe:"q48–72h或透析后补充，TDM" },
+    "美罗培南":   { mild:"1g q12h", moderate:"500mg q12h", severe:"500mg q24h" },
+    "亚胺培南":   { mild:"减量25%", moderate:"减量50%", severe:"避免或最小剂量" },
+    "厄他培南":   { mild:"无需调整", moderate:"500mg qd", severe:"500mg qd（CrCl<30需调整）" },
+    "哌拉西林他唑巴坦": { mild:"无需调整", moderate:"3.375g q6h", severe:"2.25g q6h" },
+    "头孢吡肟":   { mild:"无需调整", moderate:"1g q12h", severe:"500mg q12h" },
+    "复方磺胺甲噁唑": { mild:"全量", moderate:"半量（TMP 7.5mg/kg q12h）", severe:"避免或最小剂量" },
+    "氟康唑":     { mild:"全量", moderate:"50%剂量", severe:"50%剂量（透析日给药）" },
+    "更昔洛韦":   { mild:"减量（CrCl 50–70: q12h全量）", moderate:"CrCl 25–50: 2.5mg/kg q12h", severe:"CrCl<25: 1.25mg/kg q24h" },
+    "阿昔洛韦":   { mild:"全量", moderate:"减量25–50%", severe:"5mg/kg q24h，透析患者透析后补充" },
+    "达托霉素":   { mild:"全量", moderate:"全量", severe:"CrCl<30: 6mg/kg q48h" },
+    "奥司他韦":   { mild:"全量75mg bid", moderate:"全量", severe:"CrCl<30: 75mg qd；透析患者30mg qd" },
+    "阿米卡星":   { mild:"延长间隔", moderate:"剂量减少+间隔延长，TDM", severe:"避免或极低剂量+TDM" },
+    "多黏菌素E":  { mild:"参考说明书", moderate:"显著减量", severe:"避免（高肾毒性）或血液净化辅助" },
+    "膦甲酸钠":   { mild:"减量", moderate:"显著减量", severe:"原则上避免（高肾毒性）" },
+  },
+
+  // ── 7. 过敏交叉反应提示 ──────────────────────────────────────
+  allergyAlerts: {
+    "青霉素": {
+      cross: ["头孢菌素","碳青霉烯类","氨曲南（与头孢他啶R3侧链交叉）"],
+      note: "真正青霉素过敏率约1–2%，多数为耐受。重度过敏（过敏性休克）时：避免所有β-内酰胺类；轻度皮疹：可谨慎使用头孢菌素（交叉反应<2%）；碳青霉烯交叉反应率<1%。建议过敏评估后决定。",
+      avoidDrugs: ["青霉素","阿莫西林","氨苄西林","苯唑西林","哌拉西林他唑巴坦","阿莫西林克拉维酸"]
+    },
+    "头孢菌素": {
+      cross: ["青霉素类（侧链相同时）"],
+      note: "头孢菌素过敏：同类中R1侧链相似者交叉反应率较高；与青霉素交叉反应率<2%（现代数据）。",
+      avoidDrugs: ["头孢唑林","头孢曲松","头孢他啶","头孢吡肟","头孢噻肟"]
+    },
+    "磺胺": {
+      cross: [],
+      note: "磺胺过敏（皮疹）：避免TMP-SMX；非磺胺抗生素类磺胺衍生物（速尿等）交叉反应率低，视情况谨慎使用。",
+      avoidDrugs: ["复方磺胺甲噁唑"]
+    },
+    "喹诺酮": {
+      cross: ["同类药物"],
+      note: "喹诺酮类过敏：避免所有喹诺酮类（环丙沙星/左氧氟沙星/莫西沙星）。",
+      avoidDrugs: ["环丙沙星","左氧氟沙星","莫西沙星"]
+    }
+  }
+
+}; // end KB
+</script>
+<script>// ============================================================
+//  ENGINE v1.4 — 基因优先于表型的推理逻辑
+// ============================================================
+
+const Engine = {
+
+  normalizeOrganism(input) {
+    if (!input || !input.trim()) return null;
+    const raw = input.trim().toLowerCase();
+    for (const [name, data] of Object.entries(KB.organisms)) {
+      if (raw.includes(name.toLowerCase())) return name;
+      if (data.aliases.some(a => raw.includes(a.toLowerCase()))) return name;
+    }
+    return input.trim();
+  },
+
+  // 保留：兼容旧版文本输入
+  parseAST(text) {
+    if (!text || !text.trim()) return {};
+    const drugMap = {};
+    const patterns = [
+      /([^\(\)（）,，\n]+?)\s*[\(（]\s*([SsRrIi敏感中介耐药])\s*[\)）]/g,
+      /([^\(\)（）,，\n:：]+?)\s*[:：]\s*([SsRrIi敏感中介耐药])/g,
+    ];
+    const rm = {'s':'S','敏感':'S','r':'R','耐药':'R','i':'I','中介':'I'};
+    for (const p of patterns) {
+      let m; p.lastIndex=0;
+      while ((m=p.exec(text))!==null) {
+        const d=m[1].trim(), r=rm[m[2].trim().toLowerCase()]||m[2].trim().toUpperCase();
+        const sd=this.normalizeDrugName(d);
+        if(sd&&r) drugMap[sd]=r;
+      }
+    }
+    return drugMap;
+  },
+
+  normalizeDrugName(input) {
+    if (!input) return null;
+    const raw = input.trim().toLowerCase();
+    for (const [std, aliases] of Object.entries(KB.drugAliases)) {
+      if (raw.includes(std.toLowerCase())) return std;
+      if (aliases.some(a => raw.toLowerCase().includes(a.toLowerCase()))) return std;
+    }
+    return input.trim();
+  },
+
+  // ── 核心：基因优先的表型推导 ──────────────────────────────
+  detectPhenotypes(orgName, drugMap, geneSet) {
+    const found = [];
+    const org = orgName.toLowerCase();
+    const genes = geneSet || new Set();
+
+    // ── 金葡菌 ──
+    if (org.includes("金黄色葡萄球菌") || org.includes("凝固酶阴性")) {
+      // 基因优先
+      if (genes.has("mecA") || genes.has("mecC")) { found.push("MRSA"); }
+      else if (KB.resistancePhenotypes.MRSA.detect(drugMap)) { found.push("MRSA"); }
+      else if (KB.resistancePhenotypes.MSSA.detect(drugMap)) { found.push("MSSA"); }
+      else { found.push("未知"); }
+      return found;
+    }
+
+    // ── 肠球菌 ──
+    if (org.includes("肠球菌")) {
+      if (genes.has("vanA") || genes.has("vanB") || genes.has("vanC") ||
+          genes.has("vanD") || genes.has("vanE") || genes.has("vanG")) { found.push("VRE"); }
+      else if (KB.resistancePhenotypes.VRE.detect(drugMap)) { found.push("VRE"); }
+      else { found.push("未知"); }
+      return found;
+    }
+
+    // ── 肠杆菌目 ──
+    const enteroOrgs = ["大肠埃希菌","肺炎克雷伯菌","阴沟肠杆菌","产气肠杆菌",
+                        "奇异变形杆菌","黏质沙雷菌","柠檬酸杆菌","摩根摩根菌"];
+    if (enteroOrgs.includes(orgName)) {
+      // 碳青霉烯酶基因 → 直接确定CRE类型
+      const kpc  = ["blaKPC","blaKPC-2","blaKPC-3"].some(g=>genes.has(g));
+      const mbl  = ["blaNDM","blaNDM-1","blaNDM-5","blaVIM","blaIMP"].some(g=>genes.has(g));
+      const oxa  = ["blaOXA-48","blaOXA-181","blaOXA-232"].some(g=>genes.has(g));
+      const esbl = ["blaCTX-M","blaCTX-M-1","blaCTX-M-9","blaCTX-M-14","blaCTX-M-15",
+                    "blaCTX-M-27","blaSHV-ESBL","blaTEM-ESBL"].some(g=>genes.has(g));
+
+      if (kpc)  { found.push("CRE"); found.push("CRE_KPC"); }
+      else if (mbl)  { found.push("CRE"); found.push("CRE_MBL"); }
+      else if (oxa)  { found.push("CRE"); found.push("CRE_OXA48"); }
+      else if (KB.resistancePhenotypes.CRE.detect(drugMap)) {
+        found.push("CRE"); found.push("CRE_UNKNOWN");
+      } else if (esbl || KB.resistancePhenotypes.ESBL.detect(drugMap)) {
+        found.push("ESBL");
+      } else if (KB.resistancePhenotypes.AMPC.detect(drugMap, orgName)) {
+        found.push("AmpC"); found.push("敏感");
+      } else {
+        found.push("敏感");
+      }
+
+      // 高毒力肺炎克雷伯附加标记
+      if (orgName === "肺炎克雷伯菌") {
+        const hvkp = ["rmpA","rmpA2","magA","iucA","iroB"].some(g=>genes.has(g));
+        if (hvkp) found.push("hvKP");
+      }
+      return found;
+    }
+
+    // ── 铜绿假单胞菌 ──
+    if (org.includes("铜绿假单胞菌")) {
+      const carbGene = ["blaVIM","blaIMP","blaNDM","blaKPC","blaGES"].some(g=>genes.has(g));
+      if (KB.resistancePhenotypes.DTR_PA.detect(drugMap)) { found.push("DTR_PA"); }
+      else if (carbGene || KB.resistancePhenotypes.CRPA.detect(drugMap)) { found.push("CRPA"); }
+      else { found.push("敏感"); }
+      // ExoU高毒力
+      if (genes.has("exoU(高毒力/细胞毒)") || genes.has("exoU")) found.push("ExoU⁺高毒力");
+      return found;
+    }
+
+    // ── 鲍曼不动杆菌 ──
+    if (org.includes("鲍曼不动杆菌")) {
+      const crabGene = ["blaOXA-23","blaOXA-24/40","blaOXA-58","blaOXA-143",
+                        "blaOXA-235","blaNDM","blaVIM","blaIMP","blaKPC"].some(g=>genes.has(g));
+      if (crabGene || KB.resistancePhenotypes.CRAB.detect(drugMap)) { found.push("CRAB"); }
+      else { found.push("敏感"); }
+      return found;
+    }
+
+    found.push("未知");
+    return found;
+  },
+
+  // ── 治疗查找：CRE细分型 ──────────────────────────────────
+  getTreatment(orgName, phenotypes, specimenType, geneSet) {
+    const genes = geneSet || new Set();
+    const orgData = KB.treatments[orgName];
+    if (!orgData) {
+      const o = KB.organisms[orgName];
+      if (o && o.family==="candida") return KB.treatments["念珠菌"]?.["未知"]?.general;
+      return null;
+    }
+
+    const specMap = {blood:"blood",urine:"urine",sputum:"sputum",wound:"wound",csf:"csf"};
+    const sk = specMap[specimenType];
+
+    for (const pheno of phenotypes) {
+      // CRE细分
+      if (pheno === "CRE_KPC") {
+        const d = orgData["CRE_KPC"] || orgData["CRE"];
+        if (d) return d[sk] || d["general"] || d;
+      }
+      if (pheno === "CRE_MBL") {
+        const d = orgData["CRE_MBL"] || orgData["CRE"];
+        if (d) return d[sk] || d["general"] || d;
+      }
+      if (pheno === "CRE_OXA48") {
+        const d = orgData["CRE_OXA48"] || orgData["CRE"];
+        if (d) return d[sk] || d["general"] || d;
+      }
+      if (pheno === "CRE_UNKNOWN") {
+        const d = orgData["CRE"];
+        if (d) return d[sk] || d["general"] || d;
+      }
+
+      const pd = orgData[pheno];
+      if (!pd) continue;
+      return pd[sk] || pd["general"] || pd;
+    }
+    return null;
+  },
+
+  checkAllergy(allergyText, treatmentDrugs) {
+    if (!allergyText || !allergyText.trim()) return [];
+    const alerts = [];
+    const lower = allergyText.toLowerCase();
+    for (const [allergen, data] of Object.entries(KB.allergyAlerts)) {
+      const triggers = [allergen.toLowerCase(), ...data.avoidDrugs.map(d=>d.toLowerCase())];
+      if (!triggers.some(w=>lower.includes(w))) continue;
+      const conflicts = data.avoidDrugs.filter(a =>
+        treatmentDrugs.some(td => td.toLowerCase().includes(a.toLowerCase()) ||
+          a.toLowerCase().includes(td.toLowerCase().split(/[（(]/)[0].trim()))
+      );
+      alerts.push({ allergen, note:data.note, conflicts, cross:data.cross });
+    }
+    return alerts;
+  },
+
+  getRenalNotes(renal, treatmentDrugs) {
+    if (!renal || renal==="normal") return [];
+    const rk = {mild:"mild",moderate:"moderate",severe:"severe"}[renal];
+    if (!rk) return [];
+    const notes = [];
+    for (const drug of treatmentDrugs) {
+      for (const [std, adj] of Object.entries(KB.renalAdjust)) {
+        if (drug.includes(std) || std.includes(drug.split(/[（(]/)[0].trim())) {
+          notes.push({ drug:std, adjust:adj[rk] });
+          break;
+        }
+      }
+    }
+    return notes;
+  },
+
+  // ── 主分析入口 ────────────────────────────────────────────
+  analyze({ specimen, renal, allergy, organisms }) {
+    return organisms
+      .filter(item => item.name && item.name.trim())
+      .map(item => {
+        const orgName = this.normalizeOrganism(item.name);
+        const orgData = KB.organisms[orgName];
+        const drugMap = item.astMap || this.parseAST(item.ast || '');
+        // 把基因数组转为Set，方便查询
+        const geneSet = new Set(item.genes || []);
+
+        const phenotypes = this.detectPhenotypes(orgName, drugMap, geneSet);
+        const treatment  = this.getTreatment(orgName, phenotypes, specimen, geneSet);
+
+        const allDrugs = [];
+        if (treatment) {
+          (treatment.preferred||[]).forEach(d=>allDrugs.push(d.drug));
+          (treatment.alternative||[]).forEach(d=>allDrugs.push(d.drug));
+        }
+
+        // 毒力文本 key
+        const vkeys = {
+          "金黄色葡萄球菌":"金黄色葡萄球菌","凝固酶阴性葡萄球菌":"凝固酶阴性葡萄球菌",
+          "肺炎克雷伯菌":"肺炎克雷伯菌","铜绿假单胞菌":"铜绿假单胞菌",
+          "鲍曼不动杆菌":"鲍曼不动杆菌","嗜麦芽窄食单胞菌":"嗜麦芽窄食单胞菌"
+        };
+        let vk = "default";
+        for (const [k,v] of Object.entries(vkeys)) { if (orgName.includes(k)) { vk=v; break; } }
+        if (orgName.includes("肠球菌")) vk="肠球菌";
+        if (orgData?.family==="candida"||orgName.includes("念珠菌")) vk="念珠菌";
+        if (orgName.includes("卡氏肺孢子")) vk="卡氏肺孢子菌";
+
+        return {
+          inputName: item.name, orgName, orgData,
+          drugMap, geneSet: [...geneSet],
+          phenotypes, treatment,
+          allergyAlerts: this.checkAllergy(allergy, allDrugs),
+          renalNotes: this.getRenalNotes(renal, allDrugs),
+          virulenceText: KB.virulenceText[vk] || KB.virulenceText["default"]
+        };
+      });
+  }
+};
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  UI v1.4
+// ══════════════════════════════════════════════════════════════
+const ALL_ORGS = Object.keys(KB.organisms);
+const S = {};   // STATE: { i: { name, confirmed, astMap, genes:Set } }
+let acI = {};
+
+function buildOrgInputs() {
+  const c = document.getElementById('org-container');
+  c.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    S[i] = { name:'', confirmed:'', astMap:{}, genes:new Set() };
+    c.insertAdjacentHTML('beforeend', `
+      <div class="org-block" id="ob${i}">
+        <div class="org-row1">
+          <span class="org-num">#${i}</span>
+          <div class="ac-wrap">
+            <input class="org-input" id="oi${i}" placeholder="输入病原体名称…" autocomplete="off"
+              oninput="onIn(${i})" onkeydown="onKey(event,${i})" onblur="hideAC(${i})">
+            <div class="ac-list" id="ac${i}"></div>
+          </div>
+          <button class="panel-btn" id="pb${i}" onclick="togglePanel(${i})" title="展开药敏和耐药基因面板">
+            🧬 药敏 &amp; 基因
+            <span class="cnt" id="cnt${i}">0</span>
+            <span class="arr">▼</span>
+          </button>
+        </div>
+        <div class="org-confirmed" id="oc${i}"></div>
+        <div class="org-panel" id="op${i}"></div>
+      </div>`);
+  }
+}
+
+// ── 自动补全 ─────────────────────────────────────────────────
+function onIn(i) {
+  const v = document.getElementById(`oi${i}`).value.trim();
+  S[i].name = v; S[i].confirmed = '';
+  setConfirmed(i,'');
+  if (!v) { hideAC(i); return; }
+  const low = v.toLowerCase();
+  const hits = ALL_ORGS.filter(n => n.toLowerCase().includes(low) ||
+    KB.organisms[n].aliases.some(a=>a.toLowerCase().includes(low))).slice(0,8);
+  if (!hits.length) { hideAC(i); return; }
+  const list = document.getElementById(`ac${i}`);
+  acI[i] = -1;
+  list.innerHTML = hits.map(m => {
+    const o = KB.organisms[m];
+    const g = o.gram==='+' ? 'G⁺' : o.gram==='-' ? 'G⁻' : '';
+    const t = {cocci:'球菌',bacilli:'杆菌',atypical:'非典型',anaerobe:'厌氧',fungi:'真菌',virus:'病毒'}[o.type]||'';
+    return `<div class="ac-item" data-name="${m}" onmousedown="confirmOrg(${i},'${m}')">
+      ${m}<div class="ac-sub">${[g,t].filter(Boolean).join(' · ')}</div></div>`;
+  }).join('');
+  list.style.display = 'block';
+}
+
+function onKey(e,i) {
+  const list = document.getElementById(`ac${i}`);
+  const items = list.querySelectorAll('.ac-item');
+  if (e.key==='ArrowDown'){e.preventDefault();acI[i]=Math.min((acI[i]||0)+1,items.length-1);hilite(i,items);}
+  else if(e.key==='ArrowUp'){e.preventDefault();acI[i]=Math.max((acI[i]||0)-1,0);hilite(i,items);}
+  else if(e.key==='Enter'){e.preventDefault();
+    if(items.length){const idx=acI[i]>=0?acI[i]:0;if(items[idx])confirmOrg(i,items[idx].dataset.name);}
+    else{const std=Engine.normalizeOrganism(S[i].name);if(std)confirmOrg(i,std);}
+  }else if(e.key==='Escape')hideAC(i);
+}
+function hilite(i,items){items.forEach((el,idx)=>el.classList.toggle('active',idx===acI[i]));}
+function hideAC(i){setTimeout(()=>{const el=document.getElementById(`ac${i}`);if(el)el.style.display='none';},160);}
+
+// ── 确认菌名 ─────────────────────────────────────────────────
+function confirmOrg(i,name) {
+  document.getElementById(`oi${i}`).value = name;
+  S[i].name = name; S[i].confirmed = name;
+  S[i].astMap = {}; S[i].genes = new Set();
+  hideAC(i);
+  setConfirmed(i, name);
+  buildPanelContent(i, name);
+  updateCount(i);
+}
+
+function setConfirmed(i, name) {
+  const el = document.getElementById(`oc${i}`);
+  if (name) {
+    const o = KB.organisms[name];
+    const g = o ? (o.gram==='+' ? 'G⁺ ' : o.gram==='-' ? 'G⁻ ' : '') : '';
+    el.textContent = `✓ 已识别：${g}${name}`;
+    el.classList.add('show');
+    document.getElementById(`ob${i}`).classList.add('active');
+  } else {
+    el.textContent=''; el.classList.remove('show');
+    document.getElementById(`ob${i}`).classList.remove('active');
+  }
+}
+
+// ── 展开/收起面板 ────────────────────────────────────────────
+function togglePanel(i) {
+  const name = S[i].confirmed || S[i].name.trim();
+  if (!name) { alert('请先输入并确认病原体名称'); document.getElementById(`oi${i}`).focus(); return; }
+  if (!S[i].confirmed) { const std=Engine.normalizeOrganism(name); confirmOrg(i,std||name); }
+
+  const panel = document.getElementById(`op${i}`);
+  const btn   = document.getElementById(`pb${i}`);
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open'); btn.classList.remove('open');
+  } else {
+    if (!panel.innerHTML.trim()) buildPanelContent(i, S[i].confirmed||name);
+    panel.classList.add('open'); btn.classList.add('open');
+  }
+}
+
+// ── 生成面板内容（药敏上 + 基因下）───────────────────────────
+function buildPanelContent(i, orgName) {
+  const std = Engine.normalizeOrganism(orgName) || orgName;
+  const panel = document.getElementById(`op${i}`);
+  const data = AST_PANELS[std];
+
+  if (!data) {
+    panel.innerHTML = `<div class="panel-hint">⚠️ 该菌种暂无预设面板，将按菌名直接推荐</div>`;
+    return;
+  }
+
+  let html = '';
+
+  // ── 上半部分：药敏 ──
+  const noAST = data.ast.length===1 && data.ast[0].group.includes('无体外药敏');
+  html += `<div class="panel-section">
+    <div class="panel-section-ttl pst-ast">💊 体外药敏结果</div>`;
+  if (noAST) {
+    html += `<div class="panel-hint">ℹ️ ${std} 无需体外药敏，将直接按指南推荐</div>`;
+  } else {
+    html += `<div class="panel-hint">点击切换：未选 → <b style="color:var(--green)">S</b> → <b style="color:var(--red)">R</b> → <b style="color:var(--amber)">I</b> → 未选&nbsp;&nbsp;未选 = 未测</div>`;
+    for (const grp of data.ast) {
+      html += `<div class="grp"><div class="grp-label">${grp.group}</div><div class="grp-items">`;
+      for (const drug of grp.drugs) {
+        const sid = `d${i}_${drug.replace(/[^a-z0-9\u4e00-\u9fff]/gi,'_')}`;
+        html += `<button class="drug-btn" id="${sid}" onclick="toggleDrug(${i},'${drug.replace(/'/g,"\\'")}')"><span class="dbadge">—</span>${drug}</button>`;
+      }
+      html += `</div></div>`;
+    }
+  }
+  html += `</div>`;
+
+  // ── 下半部分：耐药+毒力基因 ──
+  if (data.genes && data.genes.length) {
+    html += `<div class="panel-section" style="border-top:1px dashed var(--border);padding-top:10px;margin-top:2px">
+      <div class="panel-section-ttl pst-gene">🧬 耐药 &amp; 毒力基因（mNGS/基因检测）</div>
+      <div class="panel-hint">点击选择检出的基因，直接影响耐药机制判断和选药方向</div>`;
+    for (const grp of data.genes) {
+      html += `<div class="grp"><div class="grp-label">${grp.group}</div><div class="grp-items">`;
+      for (const gene of grp.genes) {
+        const gid = `g${i}_${gene.replace(/[^a-z0-9\u4e00-\u9fff]/gi,'_')}`;
+        html += `<button class="gene-btn" id="${gid}" onclick="toggleGene(${i},'${gene.replace(/'/g,"\\'")}')"><span class="gbadge">+</span>${gene}</button>`;
+      }
+      html += `</div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  panel.innerHTML = html;
+}
+
+// ── 切换药敏 ─────────────────────────────────────────────────
+function toggleDrug(i, drug) {
+  const cycle=[null,'S','R','I'];
+  const cur=S[i].astMap[drug]||null;
+  const next=cycle[(cycle.indexOf(cur)+1)%cycle.length];
+  if(next===null) delete S[i].astMap[drug]; else S[i].astMap[drug]=next;
+  const sid=`d${i}_${drug.replace(/[^a-z0-9\u4e00-\u9fff]/gi,'_')}`;
+  const btn=document.getElementById(sid);
+  if(btn){btn.className=`drug-btn${next?' s-'+next:''}`;btn.querySelector('.dbadge').textContent=next||'—';}
+  updateCount(i);
+}
+
+// ── 切换基因 ─────────────────────────────────────────────────
+function toggleGene(i, gene) {
+  const gid=`g${i}_${gene.replace(/[^a-z0-9\u4e00-\u9fff]/gi,'_')}`;
+  const btn=document.getElementById(gid);
+  if(S[i].genes.has(gene)){
+    S[i].genes.delete(gene);
+    if(btn){btn.classList.remove('selected');btn.querySelector('.gbadge').textContent='+';}
+  } else {
+    S[i].genes.add(gene);
+    if(btn){btn.classList.add('selected');btn.querySelector('.gbadge').textContent='✓';}
+  }
+  updateCount(i);
+}
+
+function updateCount(i) {
+  const n=Object.keys(S[i].astMap).length + S[i].genes.size;
+  const btn=document.getElementById(`pb${i}`);
+  const cnt=document.getElementById(`cnt${i}`);
+  cnt.textContent=n;
+  if(n>0) btn.classList.add('has-data'); else btn.classList.remove('has-data');
+}
+
+// ── 分析 ─────────────────────────────────────────────────────
+function runAnalysis() {
+  const specimen=document.getElementById('specimen').value;
+  const renal=document.getElementById('renal').value;
+  const allergy=document.getElementById('allergy').value;
+  const organisms=[];
+  for(let i=1;i<=5;i++){
+    const name=(S[i].confirmed||S[i].name).trim();
+    if(!name) continue;
+    organisms.push({ name, astMap:{...S[i].astMap}, genes:[...S[i].genes] });
+  }
+  if(!organisms.length){
+    document.getElementById('results').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div style="font-size:13px;color:var(--amber)">请至少输入一种病原体名称</div></div>`;
+    return;
+  }
+  renderResults(Engine.analyze({specimen,renal,allergy,organisms}), specimen, renal);
+}
+
+function clearAll(){
+  document.getElementById('specimen').value='sputum';
+  document.getElementById('renal').value='normal';
+  document.getElementById('allergy').value='';
+  buildOrgInputs();
+  document.getElementById('results').innerHTML=`<div class="empty"><div class="empty-icon">🧪</div><div style="font-size:13px;font-weight:500">填写左侧信息后点击分析</div><div style="font-size:12px;margin-top:4px">输入菌名 → 点击「药敏 &amp; 基因」→ 点选结果 → 开始分析</div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  渲染结果
+// ══════════════════════════════════════════════════════════════
+const SL={sputum:'痰液',blood:'血液',urine:'尿液',wound:'伤口分泌物',csf:'脑脊液'};
+const PC={MRSA:'tag-red',MSSA:'tag-green',VRE:'tag-red',ESBL:'tag-amber',
+  AmpC:'tag-amber',CRE:'tag-red',CRE_KPC:'tag-red',CRE_MBL:'tag-red',CRE_OXA48:'tag-red',
+  CRE_UNKNOWN:'tag-red',DTR_PA:'tag-red',CRPA:'tag-amber',CRAB:'tag-red',
+  hvKP:'tag-purple','ExoU⁺高毒力':'tag-purple',敏感:'tag-green',未知:'tag-gray'};
+
+function pt(p){
+  const labels={'CRE_KPC':'CRE/KPC型','CRE_MBL':'CRE/MBL型','CRE_OXA48':'CRE/OXA-48型','CRE_UNKNOWN':'CRE/酶型未知'};
+  return `<span class="tag ${PC[p]||'tag-gray'}">${labels[p]||p}</span>`;
+}
+function gt(o){
+  if(!o) return '';
+  if(o.gram==='+') return '<span class="tag tag-blue">G⁺</span>';
+  if(o.gram==='-') return '<span class="tag tag-amber">G⁻</span>';
+  if(o.type==='fungi') return '<span class="tag tag-amber">真菌</span>';
+  if(o.type==='virus') return '<span class="tag tag-gray">病毒</span>';
+  if(o.type==='atypical') return '<span class="tag tag-gray">非典型</span>';
+  if(o.type==='anaerobe') return '<span class="tag tag-gray">厌氧</span>';
+  return '';
+}
+
+function drows(drugs, label) {
+  if(!drugs||!drugs.length) return '';
+  const icon=label==='首选'?'★':'◆';
+  const cls=label==='首选'?'si-g':'si-b';
+  return drugs.map((d,i)=>`
+    <div class="drug-row">
+      <div class="dri">${i===0?`<span class="si ${cls}">${icon}</span>`:''}</div>
+      <div><div class="dn">${d.drug}</div><div class="dd">${d.dose}</div>${d.note?`<div class="dnt">${d.note}</div>`:''}</div>
+    </div>`).join('');
+}
+
+function renderResults(results, specimen, renal) {
+  const disc=`<div class="disclaimer">⚠️ 本工具基于IDSA/ATS/SSC等权威指南，但指南不能代替临床判断。复杂感染、特殊患者及罕见病原体，强烈建议感染科会诊。剂量须结合患者体重、肾功能及当地药学规范最终确定。</div>`;
+  document.getElementById('results').innerHTML=
+    `<div style="padding:0">${disc}</div><div class="result-wrap">${results.map(r=>card(r,specimen,renal)).join('')}</div>`;
+}
+
+function card(r, specimen, renal) {
+  // 药敏摘要
+  const ents=Object.entries(r.drugMap);
+  const astSum=ents.length
+    ?`<div class="ast-summary">${ents.map(([d,v])=>`<span class="asp asp-${v}">${d} ${v}</span>`).join('')}</div>`
+    :`<span class="no-data">未录入药敏结果</span>`;
+
+  // 基因摘要
+  const geneSum=r.geneSet&&r.geneSet.length
+    ?`<div class="ast-summary" style="margin-top:6px">${r.geneSet.map(g=>`<span class="gene-pill">${g}</span>`).join('')}</div>`
+    :'';
+
+  // 基因影响提示
+  let geneNote='';
+  if(r.geneSet&&r.geneSet.length){
+    const hasMBL=r.geneSet.some(g=>['blaNDM','blaNDM-1','blaNDM-5','blaVIM','blaIMP'].some(x=>g.startsWith(x.split('-')[0])));
+    const hasKPC=r.geneSet.some(g=>g.startsWith('blaKPC'));
+    const hasPVL=r.geneSet.some(g=>g.includes('PVL')||g.includes('lukF')||g.includes('lukS'));
+    const hasExoU=r.geneSet.some(g=>g.includes('exoU'));
+    const hasRmpA=r.geneSet.some(g=>g.includes('rmpA')||g.includes('magA')||g.includes('iucA'));
+    if(hasMBL) geneNote+=`<div class="gene-result-box">🧬 <b>检出MBL基因（NDM/VIM/IMP）</b> — 头孢他啶阿维巴坦、美罗培南法硼巴坦对MBL型无效！推荐方案已调整为氨曲南阿维巴坦联合方案</div>`;
+    if(hasKPC) geneNote+=`<div class="gene-result-box">🧬 <b>检出blaKPC基因</b> — 已精准匹配KPC型CRE治疗方案（头孢他啶阿维巴坦/美罗培南法硼巴坦）</div>`;
+    if(hasPVL) geneNote+=`<div class="gene-result-box">🧬 <b>检出PVL毒素基因</b> — 高毒力MRSA，坏死性肺炎/皮肤感染风险显著增加。建议联合克林霉素或利奈唑胺抑制毒素生成，加强感染科会诊</div>`;
+    if(hasExoU) geneNote+=`<div class="gene-result-box">🧬 <b>检出ExoU基因</b> — 铜绿假单胞菌高毒力株，与更差预后相关，建议积极治疗</div>`;
+    if(hasRmpA) geneNote+=`<div class="gene-result-box">🧬 <b>检出hvKP毒力基因（rmpA/magA/iucA）</b> — 高毒力肺炎克雷伯菌，肝脓肿/血源播散风险高，需积极清除感染源并延长疗程</div>`;
+  }
+
+  // 治疗方案
+  let txSec;
+  if(!r.treatment){
+    txSec=`<div class="unknown-org">⚠️ 未找到「${r.orgName}」的推荐方案，请核对菌名或咨询感染科。</div>`;
+  } else {
+    const tx=r.treatment;
+    txSec=`${drows(tx.preferred,'首选')}${drows(tx.alternative,'替代')}
+      ${tx.duration?`<div class="info-row"><b>疗程：</b>${tx.duration}</div>`:''}
+      ${tx.notes?`<div class="info-row"><b>注意：</b>${tx.notes}</div>`:''}
+      ${tx.ref?`<div class="ref-text">📚 ${tx.ref}</div>`:''}`;
+  }
+
+  const allg=r.allergyAlerts.map(a=>`<div class="alert-box">🚨 <b>过敏警示 — ${a.allergen}</b><br>${a.note}${a.conflicts.length?`<br><b>冲突药物：</b>${a.conflicts.join('、')}`:''}</div>`).join('');
+  const rl={mild:'轻度',moderate:'中度',severe:'重度'}[renal]||'';
+  const ren=r.renalNotes.map(n=>`<div class="warn-box">⚠️ <b>${n.drug}</b>（肾功${rl}）：${n.adjust}</div>`).join('');
+
+  // 展示的表型标签（过滤掉内部用的CRE_*/hvKP等，保留展示标签）
+  const displayPhenos = r.phenotypes.filter(p=>!['CRE_KPC','CRE_MBL','CRE_OXA48','CRE_UNKNOWN'].includes(p));
+  // 但如果是CRE，加上细化标签
+  const extraPhenos = r.phenotypes.filter(p=>['CRE_KPC','CRE_MBL','CRE_OXA48','CRE_UNKNOWN'].includes(p));
+
+  return `<div class="rc">
+    <div class="rc-hdr">
+      <div class="rc-name">${r.orgName}</div>
+      ${gt(r.orgData)}
+      ${displayPhenos.map(pt).join(' ')}
+      ${extraPhenos.map(pt).join(' ')}
+      <span class="tag tag-gray">${SL[specimen]||specimen}</span>
+    </div>
+    <div class="rc-body">
+      <div class="sec">
+        <div class="sec-ttl"><span class="si si-x">💊</span> 药敏结果摘要</div>
+        ${astSum}
+        ${geneSum?`<div style="margin-top:2px;font-size:11px;color:var(--purple);font-weight:600">🧬 检出基因：</div>${geneSum}`:''}
+        ${geneNote}
+      </div>
+      <div class="sec"><div class="sec-ttl"><span class="si si-a">⚠</span> 致病性 &amp; 毒力判断参考</div>
+        <div class="virulence-box">${r.virulenceText}</div></div>
+      <div class="sec"><div class="sec-ttl"><span class="si si-g">✓</span> 推荐治疗方案</div>${txSec}</div>
+      ${allg?`<div class="sec">${allg}</div>`:''}
+      ${ren?`<div class="sec"><div class="sec-ttl"><span class="si si-a">⚕</span> 肾功能调整</div>${ren}</div>`:''}
+    </div>
+  </div>`;
+}
+
+buildOrgInputs();
+</script>
+</body>
+</html>
