@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sofa.py — cip-clinical-ml — Visual Studio Code</title>
+<style>
+:root{--bg:#1e1e1e;--side:#252526;--act:#333;--tab:#2d2d2d;--tx:#ccc;--blue:#007acc}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--tx);font:13px/1.4 "Segoe UI",system-ui,"Microsoft YaHei",sans-serif;overflow:hidden;user-select:none;cursor:default}
+.mono{font-family:Consolas,"Cascadia Mono","Courier New",monospace}
+#app{display:grid;height:100vh;grid-template-rows:30px minmax(0,1fr) 22px;grid-template-columns:48px 240px minmax(0,1fr)}
+#title{grid-column:1/4;background:#3c3c3c;display:flex;align-items:center;justify-content:center;font-size:12px;position:relative}
+#title .menu{position:absolute;left:10px;display:flex;gap:14px}
+#title .wc{position:absolute;right:0;display:flex}#title .wc span{width:46px;text-align:center}
+#actbar{background:var(--act);display:flex;flex-direction:column;align-items:center;padding-top:6px;gap:4px}
+#actbar div{width:48px;height:46px;display:flex;align-items:center;justify-content:center;opacity:.45;border-left:2px solid transparent}
+#actbar div.on{opacity:1;border-left-color:#fff}
+#actbar svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.5}
+#side{background:var(--side);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.sh{height:35px;flex:none;display:flex;align-items:center;padding:0 20px;font-size:11px;letter-spacing:.5px;color:#bbb}
+.sec{font-size:11px;font-weight:700;padding:3px 8px;flex:none}
+#tree{flex:1;overflow:hidden;position:relative}
+.tr{height:22px;line-height:22px;white-space:nowrap;display:flex;align-items:center;padding-right:10px}
+.tr .ar{width:16px;text-align:center;color:#c5c5c5;font-size:10px}
+.tr .ic{width:20px;font:700 9px/1 Consolas,monospace;text-align:center}
+.tr .gm{margin-left:auto;font-size:11px;color:#e2c08d}
+.tr.f:hover{background:#2a2d2e;cursor:pointer}
+.tr.on{background:#04395e;outline:1px solid #007fd4;outline-offset:-1px}
+.tr.mod .nm{color:#e2c08d}
+#mainc{display:flex;min-width:0;min-height:0}
+#left{flex:0 0 var(--lw,40%);overflow:hidden;display:grid;grid-template-rows:minmax(0,1fr) 5px minmax(0,32%);min-width:0;min-height:0}
+#vsash{flex:none;width:5px;cursor:col-resize;border-left:1px solid #444;background:var(--bg)}
+#vsash:hover,#vsash.drag{background:#007acc}
+#app.nosb{grid-template-columns:48px 0 minmax(0,1fr)}#app.nosb #side{visibility:hidden}
+.grp{display:flex;flex-direction:column;min-width:0;min-height:0}
+#g1{min-height:0;min-width:0;overflow:hidden}#panel,#ptabs{overflow:hidden;white-space:nowrap}#g2{flex:1;min-width:0}
+.tabs{height:35px;flex:none;background:var(--tab);display:flex;overflow:hidden}
+.tab{padding:0 12px;display:flex;align-items:center;gap:6px;color:#969696;border-right:1px solid #252526;white-space:nowrap}
+.tab.on{background:var(--bg);color:#fff;border-top:1px solid var(--blue)}
+.tab .x{margin-left:6px;opacity:.7;font-size:12px}
+.crumb{height:22px;flex:none;padding:0 16px;color:#a9a9a9;font-size:12px;display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden}
+#edw{flex:1;display:flex;min-height:0}
+#ed{flex:1;overflow:hidden;position:relative;font-size:12.5px;line-height:19px;padding-top:2px}
+.l{display:flex;white-space:pre;height:19px}
+.l .n{width:44px;flex:none;text-align:right;padding-right:20px;color:#6e7681}
+.l.cur{background:#282828;box-shadow:inset 0 1px #333,inset 0 -1px #333}
+.l.cur .n{color:#c6c6c6}
+.cr::after{content:"";display:inline-block;width:2px;height:17px;background:#aeafad;vertical-align:-3px;animation:b 1.06s steps(1) infinite}
+@keyframes b{50%{opacity:0}}
+#mm{width:48px;flex:none;border-left:1px solid #2a2a2a}
+#mm canvas{width:100%;height:100%;display:block}
+/* markdown preview */
+#pv{flex:1;overflow:hidden;padding:14px 22px 60px;font-size:14px;line-height:1.6;color:#d4d4d4}
+#pv h1{font-size:21px;font-weight:600;color:#e8e8e8;border-bottom:1px solid #3b3b3b;padding-bottom:6px;margin-bottom:8px}
+#pv h3{font-size:14px;font-weight:600;color:#e8e8e8;margin:14px 0 6px}
+#pv p.d{color:#a9b4bd;margin-bottom:6px}
+#pv table{border-collapse:collapse;width:100%;margin:4px 0 10px;font-size:13px}
+#pv th,#pv td{border:1px solid #3e3e3e;padding:4px 8px;text-align:left;vertical-align:top}
+#pv th{background:#2a2d2e;color:#e8e8e8;font-weight:600}
+#pv tr:nth-child(even) td{background:#232323}
+#pv td:first-child{color:#9cdcfe;white-space:nowrap}
+#pv ul{margin:4px 0 6px 20px}#pv li{margin:2px 0}
+#pv code{font-family:Consolas,monospace;background:#2d2d2d;padding:0 4px;border-radius:3px;color:#ce9178;font-size:12px}
+#pv .ref{margin-top:10px;font-size:11.5px;color:#8a8a8a;border-top:1px dashed #3b3b3b;padding-top:6px}
+#pv b{color:#dcdcaa;font-weight:600}
+#sash{border-top:1px solid #414141}
+#panel{display:flex;flex-direction:column;min-height:0}
+#ptabs{display:flex;gap:18px;padding:0 14px;height:30px;align-items:center;font-size:11px;color:#969696;flex:none}
+#ptabs .on{color:#e7e7e7;border-bottom:1px solid #e7e7e7;padding-bottom:3px}
+#term{flex:1;overflow:hidden;padding:0 14px 6px;font-size:12px;line-height:17px}
+.t{white-space:pre;overflow:hidden;min-height:18px}
+.k{color:#569cd6}.k2{color:#c586c0}.f{color:#dcdcaa}.s{color:#ce9178}.c{color:#6a9955}.u{color:#b5cea8}.cl{color:#4ec9b0}.v{color:#9cdcfe}
+.ok{color:#23d18b}.wr{color:#f5f543}.er{color:#f14c4c}.dm{color:#7f7f7f}.bl{color:#3b8eea}.cy{color:#29b8db}.wh{color:#e5e5e5}
+#status{grid-column:1/4;background:var(--blue);color:#fff;font-size:12px;display:flex;align-items:center;gap:16px;padding:0 10px;white-space:nowrap;overflow:hidden}
+#status .sp{flex:1}
+#status .btn{cursor:pointer}
+#qo{position:fixed;top:34px;left:50%;transform:translateX(-50%);width:620px;max-width:90vw;background:#252526;border:1px solid #454545;box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:99;display:none;padding-bottom:4px}
+#qi{margin:6px;width:calc(100% - 12px);background:#3c3c3c;border:1px solid #007fd4;color:#ddd;padding:5px 8px;font:13px "Segoe UI",sans-serif;outline:none}
+#ql .it{padding:3px 12px;display:flex;gap:8px;white-space:nowrap;overflow:hidden;cursor:pointer}
+#ql .it.on{background:#04395e}
+#ql .it .p{color:#8a8a8a;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+#pv.cloze td:not(:first-child){filter:blur(5px);cursor:pointer;transition:filter .2s}
+#pv.cloze td.rev{filter:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="title"><div class="menu"><span>File</span><span>Edit</span><span>Selection</span><span>View</span><span>Go</span><span>Run</span><span>Terminal</span><span>Help</span></div>
+    <span id="wtitle">cip-clinical-ml</span><div class="wc"><span>—</span><span>☐</span><span>✕</span></div></div>
+  <div id="actbar">
+    <div class="on"><svg viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/></svg></div>
+    <div><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/></svg></div>
+    <div><svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="9" r="2"/><path d="M6 7v10M18 11c0 4-12 2-12 6"/></svg></div>
+    <div><svg viewBox="0 0 24 24"><path d="M7 4l12 8-12 8z"/></svg></div>
+    <div><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+  </div>
+  <div id="side"><div class="sh">EXPLORER</div><div class="sec">▾ CIP-CLINICAL-ML</div><div id="tree"></div></div>
+  <div id="mainc">
+    <div id="left">
+      <div class="grp" id="g1"><div class="tabs" id="tabs"></div><div class="crumb mono" id="crumb"></div>
+        <div id="edw"><div id="ed" class="mono"></div><div id="mm"><canvas id="mmc"></canvas></div></div></div>
+      <div id="sash"></div>
+      <div id="panel"><div id="ptabs"><span>PROBLEMS</span><span>OUTPUT</span><span class="on">TERMINAL</span><span>PORTS</span><span style="margin-left:auto">⌄ bash</span></div><div id="term" class="mono"></div></div>
+    </div>
+    <div id="vsash" title="drag to resize · double-click to reset"></div>
+    <div class="grp" id="g2"><div class="tabs"><div class="tab on" id="pvtab"></div></div><div class="crumb mono" id="pvcrumb"></div><div id="pv"></div></div>
+  </div>
+  <div id="status"><span>⎇ feature/icu-scores*</span><span>⟳ 0↓ 3↑</span><span>⊗ 0 ⚠ 2</span><span id="prog"></span><span class="btn" id="revbtn">◎ Review: off</span><span class="sp"></span>
+    <span id="pos">Ln 1, Col 1</span><span>Spaces: 4</span><span>UTF-8</span><span>LF</span><span id="lang">Python</span><span id="interp">3.12.4 ('.venv': venv)</span><span>⚡ Ruff</span></div>
+</div>
+
+<div id="qo"><input id="qi" placeholder="Go to score (e.g. sofa, child, ards)" spellcheck="false"><div id="ql"></div></div>
+<script>
+"use strict";
+/* =====================================================================
+   SCORES: each = code (typed in editor) + markdown preview + test/demo
+   ===================================================================== */
+const SCORES=[
+{id:"gcs",title:"Glasgow Coma Scale (GCS) · GCS-P · FOUR",
+desc:"意识水平评估。GCS 总分 3–15；插管患者语言记为 VT（如 E3VTM6）。",
+tables:[{cap:"GCS（Teasdale 2014 新术语）",head:["分","睁眼 E","语言 V","运动 M"],rows:[
+["6","—","—","遵嘱动作 obeys commands"],["5","—","定向正常 oriented","定位疼痛 localising"],["4","自发 spontaneous","言语混乱 confused","正常屈曲/回缩 normal flexion"],
+["3","声音刺激 to sound","不恰当词语 words","异常屈曲(去皮层) abnormal flexion"],["2","压力刺激 to pressure","仅发声 sounds","伸展(去大脑) extension"],["1","无","无","无"]]},
+{cap:"FOUR score（每项 0–4，总分 0–16；可评估插管患者及脑干功能）",head:["分","Eye","Motor","Brainstem","Respiration"],rows:[
+["4","睁眼并追踪/遵嘱眨眼","竖拇指/握拳/V 手势","瞳孔+角膜反射存在","未插管，呼吸规则"],["3","睁眼不追踪","定位疼痛","一侧瞳孔散大固定","未插管，潮式呼吸"],
+["2","闭眼，大声呼唤睁眼","疼痛屈曲","瞳孔或角膜反射消失","未插管，呼吸不规则"],["1","闭眼，疼痛刺激睁眼","疼痛伸展","瞳孔和角膜反射均消失","呼吸频率高于呼吸机"],
+["0","疼痛刺激仍闭眼","无反应/全身肌阵挛状态","瞳孔、角膜、咳嗽反射均消失","等于呼吸机频率或呼吸暂停"]]}],
+notes:["<b>≤8</b> 昏迷 → 评估气道保护；TBI 分级：13–15 轻 / 9–12 中 / 3–8 重","<b>GCS-P</b> = GCS − 无反应瞳孔数（0/1/2），范围 1–15","报告时写分项（E/V/M）比总分更有信息量，M 分预后价值最大"],
+refs:"Teasdale G, Lancet 1974 · Teasdale G, Lancet Neurol 2014 · Brennan PM, J Neurosurg 2018 · Wijdicks EF, Ann Neurol 2005",
+tests:["test_gcs_range_3_15","test_intubated_returns_VT_notation","test_gcs_p_min_is_1","test_four_score_bounds","test_airway_flag_le_8"],
+demo:["GCS(e=2, v=2, m=4) → <span class='wh'>8</span>  airway_flag=<span class='er'>True</span>","GCS(e=3, v=None, m=6) → <span class='wh'>E3VTM6</span>","gcs_p(8, pupils_unreactive=1) → <span class='wh'>7</span>","four_score(e=1, m=2, b=2, r=1) → <span class='wh'>6</span>"],
+code:`"""Glasgow Coma Scale (Teasdale 2014 terminology) + GCS-P + FOUR score."""
+from dataclasses import dataclass
+
+EYE = {4: "spontaneous", 3: "to sound", 2: "to pressure", 1: "none"}
+VERBAL = {5: "oriented", 4: "confused", 3: "words", 2: "sounds", 1: "none"}
+MOTOR = {6: "obeys commands", 5: "localising", 4: "normal flexion",
+         3: "abnormal flexion", 2: "extension", 1: "none"}
+
+@dataclass
+class GCS:
+    e: int
+    v: int | None   # None = intubated / not testable -> "VT"
+    m: int
+
+    def total(self) -> str:
+        if self.v is None:
+            return f"E{self.e}VTM{self.m}"
+        return str(self.e + self.v + self.m)
+
+def gcs_p(gcs_total: int, pupils_unreactive: int) -> int:
+    """GCS-Pupils: subtract number of non-reactive pupils (0/1/2), range 1-15."""
+    assert pupils_unreactive in (0, 1, 2)
+    return gcs_total - pupils_unreactive
+
+def four_score(e: int, m: int, b: int, r: int) -> int:
+    """FOUR: Eye, Motor, Brainstem, Respiration, each 0-4 (total 0-16)."""
+    assert all(0 <= x <= 4 for x in (e, m, b, r))
+    return e + m + b + r
+
+def airway_flag(g: GCS) -> bool:
+    return g.v is not None and int(g.total()) <= 8`},
+
+{id:"sofa",title:"SOFA · qSOFA · Sepsis-3",
+desc:"序贯器官衰竭评分，每系统 0–4，总分 0–24。取 24 h 内最差值；Sepsis-3 以 ΔSOFA ≥2 定义器官功能障碍。",
+tables:[{cap:"SOFA（Vincent 1996）",head:["系统","0","1","2","3","4"],rows:[
+["呼吸 P/F mmHg","≥400","<400","<300","<200 + 呼吸支持","<100 + 呼吸支持"],["凝血 PLT ×10⁹/L","≥150","<150","<100","<50","<20"],
+["肝 TBil µmol/L","<20","20–32","33–101","102–204",">204"],["循环 (µg/kg/min ≥1h)","MAP ≥70","MAP <70","DA ≤5 或任意 Dobu","DA >5 或 E/NE ≤0.1","DA >15 或 E/NE >0.1"],
+["CNS GCS","15","13–14","10–12","6–9","<6"],["肾 Cr µmol/L / 尿量","<110","110–170","171–299","300–440 或 UO <500 mL/d",">440 或 UO <200 mL/d"]]},
+{cap:"qSOFA（每项 1 分，≥2 阳性）",head:["指标","标准"],rows:[["呼吸频率","≥22 次/分"],["意识改变","GCS <15"],["收缩压","≤100 mmHg"]]}],
+notes:["<b>Sepsis</b> = 感染 + ΔSOFA ≥2（院内死亡率 >10%）","<b>Septic shock</b> = 充分液体复苏后仍需血管活性药维持 MAP ≥65 mmHg 且 Lactate >2 mmol/L（死亡率 >40%）","SSC 2021：不推荐单独使用 qSOFA 作为脓毒症筛查工具（与 SIRS/NEWS/MEWS 相比）","本表为经典 SOFA（SOFA-1）；2025 年新版见 <code>sofa2.md</code>（Ranzani, JAMA 2025）"],
+refs:"Vincent JL, Intensive Care Med 1996 · Singer M, JAMA 2016 · Evans L, Crit Care Med 2021 (SSC) · Ranzani OT, JAMA 2025",
+tests:["test_resp_requires_vent_for_3_4","test_coag_bands","test_liver_umol_cutoffs","test_cv_norepi_gt_0_1_is_4","test_renal_uo_overrides","test_qsofa_max_3","test_septic_shock_definition"],
+demo:["P/F 180 vent R<span class='wh'>3</span> · PLT 85 C<span class='wh'>2</span> · TBil 40 L<span class='wh'>2</span> · NE 0.15 CV<span class='wh'>4</span> · GCS 13 N<span class='wh'>1</span> · Cr 190 K<span class='wh'>2</span>","SOFA = <span class='wh'>14</span>  baseline 2 → ΔSOFA 12 → <span class='er'>Sepsis-3 ✓</span>","qsofa(rr=26, sbp=92, gcs=13) → <span class='wh'>3</span>","septic_shock(needs_pressor=True, lactate=4.1) → <span class='er'>True</span>"],
+code:`"""SOFA (Vincent 1996) + qSOFA; Sepsis-3 definitions (Singer, JAMA 2016)."""
+
+def _band(x: float, cuts: list[float]) -> int:
+    """ascending thresholds -> 0..len(cuts) points"""
+    return sum(x >= c for c in cuts)
+
+def sofa_resp(pf: float, resp_support: bool) -> int:
+    if pf < 100 and resp_support: return 4
+    if pf < 200 and resp_support: return 3
+    if pf < 300: return 2
+    return 1 if pf < 400 else 0
+
+def sofa_coag(plt: float) -> int:          # x10^9/L
+    return 4 if plt < 20 else 3 if plt < 50 else 2 if plt < 100 else 1 if plt < 150 else 0
+
+def sofa_liver(bili_umol: float) -> int:
+    return _band(bili_umol, [20, 33, 102, 205])
+
+def sofa_cv(map_mmhg, ne=0.0, epi=0.0, dopa=0.0, dobu=0.0) -> int:   # mcg/kg/min
+    if dopa > 15 or epi > 0.1 or ne > 0.1: return 4
+    if dopa > 5 or epi > 0 or ne > 0: return 3
+    if dopa > 0 or dobu > 0: return 2
+    return 1 if map_mmhg < 70 else 0
+
+def sofa_cns(gcs: int) -> int:
+    return 0 if gcs == 15 else 1 if gcs >= 13 else 2 if gcs >= 10 else 3 if gcs >= 6 else 4
+
+def sofa_renal(cr_umol: float, uo_ml_day: float | None = None) -> int:
+    pts = _band(cr_umol, [110, 171, 300, 441])
+    if uo_ml_day is not None:
+        pts = max(pts, 4 if uo_ml_day < 200 else 3 if uo_ml_day < 500 else 0)
+    return pts
+
+def qsofa(rr: int, sbp: int, gcs: int) -> int:
+    return (rr >= 22) + (sbp <= 100) + (gcs < 15)
+
+def septic_shock(needs_pressor_for_map65: bool, lactate: float) -> bool:
+    return needs_pressor_for_map65 and lactate > 2.0`},
+
+{id:"sofa2",title:"SOFA-2（2025）· 与经典 SOFA 对照",
+desc:"Ranzani 等基于 10 个国际队列 334 万 ICU 患者开发与验证（JAMA 2025）。仍为 6 个系统、每系统 0–4、总分 0–24；纳入现代器官支持（HFNC/NIV、ECMO、机械循环支持、RRT）并修订阈值。第 1 天 AUROC 0.79（SOFA-1 0.77）。",
+tables:[{cap:"SOFA-2（Table 2）",head:["系统","0","1","2","3","4"],rows:[
+["脑 GCS","15（或竖拇指/握拳/V 手势）","13–14（或定位疼痛）或 需药物治疗谵妄","9–12（或疼痛回缩）","6–8（或疼痛屈曲）","3–5（或疼痛伸展、无反应、全身肌阵挛）"],
+["呼吸 P/F mmHg","&gt;300","≤300","≤225","≤150 + 高级呼吸支持","≤75 + 高级呼吸支持 或 ECMO"],
+["循环 NE+E µg/kg/min","MAP ≥70，无血管活性药","MAP &lt;70，无血管活性药","低剂量 ≤0.2 或 任意剂量其他升压/正性肌力药","中剂量 &gt;0.2–0.4 或 低剂量 + 其他药","高剂量 &gt;0.4 或 中剂量 + 其他药 或 机械循环支持"],
+["肝 TBil µmol/L (mg/dL)","≤20.6 (≤1.20)","≤51.3 (≤3.0)","≤102.6 (≤6.0)","≤205 (≤12.0)","&gt;205 (&gt;12)"],
+["肾 Cr µmol/L / 尿量 mL/kg/h","≤110","≤170 或 UO &lt;0.5 × 6–12 h","≤300 或 UO &lt;0.5 × ≥12 h","&gt;300 或 UO &lt;0.3 × ≥24 h 或 无尿 ≥12 h","正在 RRT 或 符合 RRT 指征（含慢性透析）"],
+["凝血 PLT ×10⁹/L","&gt;150","≤150","≤100","≤80","≤50"]]},
+{cap:"无 PaO₂ 时用 SpO₂/FiO₂（仅 SpO₂ &lt;98%）",head:["分","0","1","2","3","4"],rows:[["S/F","&gt;300","≤300","≤250","≤200 + 高级支持","≤120 + 高级支持 或 ECMO"]]},
+{cap:"与 SOFA-1 的主要差别",head:["系统","SOFA-1（1996）","SOFA-2（2025）"],rows:[
+["脑","10–12 / 6–9 / &lt;6","9–12 / 6–8 / 3–5；谵妄用药 ≥1 分；镇静者取镇静前最后 GCS"],
+["呼吸","400 / 300 / 200 / 100；3–4 分需机械通气","300 / 225 / 150 / 75；3–4 分需“高级呼吸支持”（HFNC、CPAP、BiPAP、NIV、IMV、家庭通气）；呼吸 ECMO = 4"],
+["循环","多巴胺 5/15 分档；NE/E 0.1","NE+E 合计 0.2 / 0.4 分档；联用其他药升一档；VA-ECMO/IABP/LVAD/Impella = 4"],
+["肝","1 分 1.2–1.9 mg/dL","1 分上限放宽到 ≤3.0 mg/dL"],
+["肾","Cr &gt;5.0 或 UO &lt;200 mL/d = 4","加入 KDIGO 尿量（mL/kg/h）；RRT 或符合 RRT 指征 = 4"],
+["凝血","&lt;50 = 3，&lt;20 = 4","≤80 = 3，≤50 = 4"]]}],
+notes:["取 24 h 内每个系统的最高分相加；第 1 天缺失值记 0，之后缺失沿用上一次（LOCF）","血管活性药须持续静脉输注 ≥1 h；NE 按<b>碱基</b>计：1 mg NE base = 2 mg 重酒石酸盐一水合物 = 1.89 mg 无水重酒石酸盐 = 1.22 mg 盐酸盐","多巴胺单用：≤20 → 2 分，&gt;20–40 → 3 分，&gt;40 → 4 分","无血管活性药可用/治疗上限时按 MAP 计分：≥70 → 0，60–69 → 1，50–59 → 2，40–49 → 3，&lt;40 → 4","未接受高级呼吸支持者呼吸最高 2 分（除非无法获得或治疗上限）；吸痰等 1 h 内的短暂 P/F 变化不计","ECMO 用于呼吸衰竭：只计呼吸 4 分；用于循环（任何形式）：循环与呼吸都计 4 分","符合 RRT 指征 = Cr &gt;110 µmol/L 或 UO &lt;0.3 mL/kg/h &gt;6 h，加上 K⁺ ≥6.0 或（pH ≤7.20 且 HCO₃⁻ ≤12）；间断 RRT 在未透析日也计 4 分；仅为非肾性原因（清除毒物/细胞因子）的 RRT 不计","重新分类：与 SOFA-1 比较，40% 患者 SOFA-2 更低（中位 −3），11% 更高"],
+refs:"Ranzani OT, Singer M, Salluh JIF, et al. JAMA 2025;334(23):2090-2103. PMID 41159833 · doi:10.1001/jama.2025.20516",
+tests:["test_brain_delirium_drugs_min_1","test_brain_sedated_uses_pre_sedation_gcs","test_resp_max_2_without_adv_support","test_resp_sf_only_if_spo2_lt_98","test_resp_ecmo_is_4","test_cv_ne_epi_sum_bands","test_cv_other_agent_bumps_one_level","test_cv_dopamine_only_cutoffs","test_cv_map_only_when_no_drugs","test_liver_bands_umol","test_kidney_rrt_criteria_is_4","test_hemostasis_80_50"],
+demo:["same patient as sofa.py --demo:","  P/F 180 + IMV   SOFA-1 R<span class='wh'>3</span> → SOFA-2 R<span class='wh'>2</span>   (≤225, not ≤150)","  PLT 85          C<span class='wh'>2</span> → <span class='wh'>2</span>      TBil 40 µmol/L  L<span class='wh'>2</span> → <span class='wh'>1</span>","  NE 0.15 alone   CV<span class='wh'>4</span> → <span class='wh'>2</span>     GCS 13  N<span class='wh'>1</span> → <span class='wh'>1</span>     Cr 190  K<span class='wh'>2</span> → <span class='wh'>2</span>","SOFA-1 = <span class='wh'>14</span>   SOFA-2 = <span class='ok'>10</span>   (Δ −4)","cardiovascular(map=66, ne_epi=0.25, other_pressor=True) → <span class='er'>4</span>   # medium dose + vasopressin"],
+code:`"""SOFA-2 (Ranzani, JAMA 2025). Max points per system within 24 h; total 0-24."""
+
+ADV_SUPPORT = {"HFNC", "CPAP", "BiPAP", "NIV", "IMV", "home_vent"}
+
+def brain(gcs: int | None, delirium_drugs: bool = False) -> int:
+    """Sedated: last GCS before sedation (unknown -> 0). E/V not testable: best motor."""
+    if gcs is None:
+        return 0
+    pts = 0 if gcs == 15 else 1 if gcs >= 13 else 2 if gcs >= 9 else 3 if gcs >= 6 else 4
+    return max(pts, 1) if delirium_drugs else pts
+
+def respiratory(pf=None, sf=None, spo2=None, support=None, ecmo_resp=False,
+                support_unavailable=False) -> int:
+    if ecmo_resp:
+        return 4
+    adv = support in ADV_SUPPORT or support_unavailable
+    if pf is not None:
+        ratio, cuts = pf, [(75, 4), (150, 3), (225, 2), (300, 1)]
+    elif sf is not None and spo2 is not None and spo2 < 98:
+        ratio, cuts = sf, [(120, 4), (200, 3), (250, 2), (300, 1)]
+    else:
+        return 0
+    for thr, pts in cuts:
+        if ratio <= thr and (pts < 3 or adv):    # 3-4 points need advanced support
+            return pts
+    return 0
+
+def cardiovascular(map_mmhg, ne_epi=0.0, other_pressor=False, mech_support=False,
+                   dopamine_only=None, drugs_unavailable=False) -> int:
+    """ne_epi: norepinephrine (as base) + epinephrine, mcg/kg/min, infusion >= 1 h"""
+    if drugs_unavailable:                         # ceiling of treatment: MAP only
+        return 0 if map_mmhg >= 70 else 1 if map_mmhg >= 60 else 2 if map_mmhg >= 50 else 3 if map_mmhg >= 40 else 4
+    if dopamine_only is not None:
+        return 2 if dopamine_only <= 20 else 3 if dopamine_only <= 40 else 4
+    if mech_support or ne_epi > 0.4:
+        return 4
+    if ne_epi > 0.2:
+        return 4 if other_pressor else 3
+    if ne_epi > 0:
+        return 3 if other_pressor else 2
+    if other_pressor:
+        return 2
+    return 0 if map_mmhg >= 70 else 1
+
+def liver(bili_umol: float) -> int:
+    return 0 if bili_umol <= 20.6 else 1 if bili_umol <= 51.3 else 2 if bili_umol <= 102.6 else 3 if bili_umol <= 205 else 4
+
+def meets_rrt_criteria(cr_umol, uo_lt03_h, k, ph, hco3) -> bool:
+    renal = cr_umol > 110 or uo_lt03_h > 6
+    return renal and (k >= 6.0 or (ph <= 7.20 and hco3 <= 12))
+
+def kidney(cr_umol, uo_lt05_h=0, uo_lt03_h=0, anuria_h=0, rrt=False, rrt_criteria=False) -> int:
+    if rrt or rrt_criteria:
+        return 4
+    if cr_umol > 300 or uo_lt03_h >= 24 or anuria_h >= 12:
+        return 3
+    if cr_umol > 170 or uo_lt05_h >= 12:
+        return 2
+    return 1 if cr_umol > 110 or uo_lt05_h >= 6 else 0
+
+def hemostasis(plt: float) -> int:
+    return 0 if plt > 150 else 1 if plt > 100 else 2 if plt > 80 else 3 if plt > 50 else 4`},
+
+
+{id:"apache2",title:"APACHE II",
+desc:"入 ICU 24 h 内最差值。总分 = APS（12 项生理 + GCS）+ 年龄分 + 慢性健康分，范围 0–71。",
+tables:[{cap:"急性生理评分 APS",head:["变量","+4","+3","+2","+1","0","+1","+2","+3","+4"],rows:[
+["T 肛温 ℃","≥41","39–40.9","—","38.5–38.9","36–38.4","34–35.9","32–33.9","30–31.9","≤29.9"],
+["MAP mmHg","≥160","130–159","110–129","—","70–109","—","50–69","—","≤49"],
+["HR","≥180","140–179","110–139","—","70–109","—","55–69","40–54","≤39"],
+["RR","≥50","35–49","—","25–34","12–24","10–11","6–9","—","≤5"],
+["A-aDO₂ (FiO₂≥0.5)","≥500","350–499","200–349","—","<200","","","",""],
+["PaO₂ (FiO₂<0.5)","","","","",">70","61–70","—","55–60","<55"],
+["pH","≥7.7","7.6–7.69","—","7.5–7.59","7.33–7.49","—","7.25–7.32","7.15–7.24","<7.15"],
+["Na⁺","≥180","160–179","155–159","150–154","130–149","—","120–129","111–119","≤110"],
+["K⁺","≥7","6–6.9","—","5.5–5.9","3.5–5.4","3–3.4","2.5–2.9","—","<2.5"],
+["Cr mg/dL (ARF ×2)","≥3.5","2–3.4","1.5–1.9","—","0.6–1.4","—","<0.6","",""],
+["Hct %","≥60","—","50–59.9","46–49.9","30–45.9","—","20–29.9","—","<20"],
+["WBC ×10⁹/L","≥40","—","20–39.9","15–19.9","3–14.9","—","1–2.9","—","<1"],
+["GCS","15 − GCS","","","","","","","",""]]},
+{cap:"年龄分 / 慢性健康分",head:["年龄","分","慢性健康（严重器官功能不全或免疫抑制）","分"],rows:[["≤44","0","非手术 或 急诊术后","5"],["45–54","2","择期术后","2"],["55–64","3","",""],["65–74","5","",""],["≥75","6","",""]]}],
+notes:["Cr 换算：µmol/L ≈ mg/dL × 88.4；急性肾衰时肌酐分值加倍","慢性健康定义：肝硬化活检证实/门脉高压、NYHA IV、严重 COPD/慢性缺氧、长期透析、免疫抑制"],
+refs:"Knaus WA, Crit Care Med 1985",
+tests:["test_band_descending_thresholds","test_temp_bands","test_oxygenation_switch_at_fio2_0_5","test_cr_doubled_in_arf","test_age_points","test_chronic_health_points"],
+demo:["T 38.7(+1) MAP 62(+2) HR 118(+2) RR 28(+1) AaDO₂ 320(+2) pH 7.28(+2)","Na 134(0) K 4.1(0) Cr 2.4(+3) Hct 31(0) WBC 18(+1) GCS 13(+2)","APS <span class='wh'>16</span> + Age 68 <span class='wh'>5</span> + CHP <span class='wh'>0</span> = APACHE II <span class='wh'>21</span>"],
+code:`"""APACHE II (Knaus, Crit Care Med 1985) - worst values in the first 24 h."""
+# ordered (threshold, points): first threshold with x >= thr wins; None = floor
+APS = {
+    "temp":  [(41, 4), (39, 3), (38.5, 1), (36, 0), (34, 1), (32, 2), (30, 3), (None, 4)],
+    "map":   [(160, 4), (130, 3), (110, 2), (70, 0), (50, 2), (None, 4)],
+    "hr":    [(180, 4), (140, 3), (110, 2), (70, 0), (55, 2), (40, 3), (None, 4)],
+    "rr":    [(50, 4), (35, 3), (25, 1), (12, 0), (10, 1), (6, 2), (None, 4)],
+    "ph":    [(7.7, 4), (7.6, 3), (7.5, 1), (7.33, 0), (7.25, 2), (7.15, 3), (None, 4)],
+    "na":    [(180, 4), (160, 3), (155, 2), (150, 1), (130, 0), (120, 2), (111, 3), (None, 4)],
+    "k":     [(7, 4), (6, 3), (5.5, 1), (3.5, 0), (3, 1), (2.5, 2), (None, 4)],
+    "cr_mg": [(3.5, 4), (2, 3), (1.5, 2), (0.6, 0), (None, 2)],
+    "hct":   [(60, 4), (50, 2), (46, 1), (30, 0), (20, 2), (None, 4)],
+    "wbc":   [(40, 4), (20, 2), (15, 1), (3, 0), (1, 2), (None, 4)],
+}
+
+def band(var: str, x: float) -> int:
+    for thr, pts in APS[var]:
+        if thr is None or x >= thr:
+            return pts
+
+def oxygenation(fio2: float, pao2: float, aado2: float) -> int:
+    if fio2 >= 0.5:
+        return 4 if aado2 >= 500 else 3 if aado2 >= 350 else 2 if aado2 >= 200 else 0
+    return 0 if pao2 > 70 else 1 if pao2 >= 61 else 3 if pao2 >= 55 else 4
+
+def age_points(age: int) -> int:
+    return 0 if age <= 44 else 2 if age <= 54 else 3 if age <= 64 else 5 if age <= 74 else 6
+
+def apache2(v: dict, gcs: int, age: int, chronic: str | None = None, arf=False) -> int:
+    aps = sum(band(k, v[k]) for k in APS)
+    if arf:
+        aps += band("cr_mg", v["cr_mg"])          # creatinine points doubled in ARF
+    aps += oxygenation(v["fio2"], v["pao2"], v["aado2"]) + (15 - gcs)
+    chp = {"nonop": 5, "emergency": 5, "elective": 2}.get(chronic, 0)
+    return aps + age_points(age) + chp`},
+
+{id:"child_pugh",title:"Child-Turcotte-Pugh 分级 · West Haven 肝性脑病分级",
+desc:"肝硬化肝功能储备评估，5 项各 1–3 分，总分 5–15。",
+tables:[{cap:"Child-Pugh",head:["指标","1 分","2 分","3 分"],rows:[
+["总胆红素","<34 µmol/L (<2 mg/dL)","34–50 (2–3)",">50 (>3)"],["白蛋白",">35 g/L","28–35","<28"],["INR","<1.7","1.7–2.3",">2.3"],
+["腹水","无","轻度 / 药物可控","中–重度 / 难治"],["肝性脑病","无","1–2 级","3–4 级"]]},
+{cap:"分级",head:["Class","总分","1 年生存（经典数据）"],rows:[["A","5–6","~100%"],["B","7–9","~80%"],["C","10–15","~45%"]]},
+{cap:"West Haven",head:["级","表现"],rows:[["0 / 轻微","无临床异常，仅心理测试异常 (MHE)"],["1","轻度认知障碍、注意力下降、欣快或焦虑"],["2","嗜睡、时间定向障碍、扑翼样震颤"],["3","嗜睡至半昏迷、对刺激有反应、明显定向障碍"],["4","昏迷"]]}],
+notes:["PBC/PSC 胆红素阈值改为 <68 / 68–170 / >170 µmol/L（<4 / 4–10 / >10 mg/dL）","服用华法林时 INR 不能反映肝合成功能","ISHEN：West Haven 2–4 级 = overt HE"],
+refs:"Pugh RN, Br J Surg 1973 · Vilstrup H, Hepatology 2014 (AASLD/EASL HE guideline)",
+tests:["test_bilirubin_bands","test_albumin_reverse_scoring","test_inr_bands","test_class_cutoffs","test_west_haven_mapping"],
+demo:["TBil 58 → <span class='wh'>3</span> · Alb 27 → <span class='wh'>3</span> · INR 1.9 → <span class='wh'>2</span> · ascites moderate → <span class='wh'>3</span> · HE grade 1 → <span class='wh'>2</span>","child_pugh(...) → (<span class='wh'>13</span>, <span class='er'>'C'</span>)"],
+code:`"""Child-Turcotte-Pugh (Pugh, Br J Surg 1973) + West Haven HE grading."""
+
+WEST_HAVEN = {
+    0: "no abnormality / minimal HE (psychometric tests only)",
+    1: "trivial lack of awareness, shortened attention span",
+    2: "lethargy, disorientation to time, asterixis",
+    3: "somnolence to semi-stupor, gross disorientation",
+    4: "coma",
+}
+
+def _pts(x: float, lo: float, hi: float, reverse: bool = False) -> int:
+    if reverse:                       # lower is worse (albumin)
+        return 1 if x > lo else 2 if x >= hi else 3
+    return 1 if x < lo else 2 if x <= hi else 3
+
+def child_pugh(bili_umol, alb_g_l, inr, ascites: int, he_grade: int, cholestatic=False):
+    """ascites: 0 none / 1 mild-controlled / 2 moderate-severe; he_grade: West Haven 0-4"""
+    b_lo, b_hi = (68, 170) if cholestatic else (34, 50)
+    s = (_pts(bili_umol, b_lo, b_hi)
+         + _pts(alb_g_l, 35, 28, reverse=True)
+         + _pts(inr, 1.7, 2.3)
+         + (1 + min(ascites, 2))
+         + (1 if he_grade == 0 else 2 if he_grade <= 2 else 3))
+    cls = "A" if s <= 6 else "B" if s <= 9 else "C"
+    return s, cls`},
+
+{id:"meld",title:"MELD · MELD-Na · MELD 3.0",
+desc:"终末期肝病模型，预测 90 天死亡率；OPTN 自 2023 年起肝移植分配采用 MELD 3.0。单位：胆红素、肌酐 mg/dL，白蛋白 g/dL。",
+tables:[{cap:"公式",head:["模型","公式"],rows:[
+["MELD","10 × (0.957·ln Cr + 0.378·ln TBil + 1.120·ln INR + 0.643)"],
+["MELD-Na","MELD + 1.32·(137−Na) − 0.033·MELD·(137−Na)（仅 MELD >11）"],
+["MELD 3.0","1.33(女) + 4.56·ln TBil + 0.82·(137−Na) − 0.24·(137−Na)·ln TBil + 9.09·ln INR + 11.14·ln Cr + 1.85·(3.5−Alb) − 1.83·(3.5−Alb)·ln Cr + 6"]]},
+{cap:"变量边界",head:["变量","MELD / MELD-Na","MELD 3.0"],rows:[["TBil, INR","下限 1.0","下限 1.0"],["Cr","1.0–4.0；1 周内透析 ≥2 次或 CRRT ≥24h → 4.0","1.0–3.0；透析 → 3.0"],["Na","125–137","125–137"],["Alb","—","1.5–3.5"]]},
+{cap:"MELD 与 90 天死亡率（住院患者）",head:["MELD","死亡率"],rows:[["<10","1.9%"],["10–19","6.0%"],["20–29","19.6%"],["30–39","52.6%"],["≥40","71.3%"]]}],
+notes:["MELD 上限 40","MELD 3.0 加入性别与白蛋白，减少女性在分配中的劣势"],
+refs:"Kamath PS, Hepatology 2001 · Wiesner R, Gastroenterology 2003 · Kim WR, NEJM 2008 · Kim WR, Gastroenterology 2021",
+tests:["test_lower_bounds_1_0","test_dialysis_sets_cr_4","test_meldna_only_above_11","test_meld3_female_term","test_meld_cap_40"],
+demo:["TBil 4.2  INR 2.1  Cr 1.8  Na 128  Alb 2.6  female","meld → <span class='wh'>26</span>   meld_na → <span class='wh'>30</span>   meld3 → <span class='wh'>32</span>"],
+code:`"""MELD (Kamath 2001), MELD-Na (Kim, NEJM 2008), MELD 3.0 (Kim, Gastroenterology 2021).
+Units: bilirubin & creatinine mg/dL, albumin g/dL."""
+from math import log
+
+def _clip(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
+
+def meld(bili, inr, cr, dialysis=False) -> int:
+    cr = 4.0 if dialysis else _clip(cr, 1.0, 4.0)
+    bili, inr = max(bili, 1.0), max(inr, 1.0)
+    m = 10 * (0.957 * log(cr) + 0.378 * log(bili) + 1.120 * log(inr) + 0.643)
+    return min(round(m), 40)
+
+def meld_na(bili, inr, cr, na, dialysis=False) -> int:
+    m = meld(bili, inr, cr, dialysis)
+    if m <= 11:
+        return m
+    na = _clip(na, 125, 137)
+    return min(round(m + 1.32 * (137 - na) - 0.033 * m * (137 - na)), 40)
+
+def meld3(bili, inr, cr, na, alb, female: bool, dialysis=False) -> int:
+    bili, inr = max(bili, 1.0), max(inr, 1.0)
+    cr = 3.0 if dialysis else _clip(cr, 1.0, 3.0)
+    na, alb = _clip(na, 125, 137), _clip(alb, 1.5, 3.5)
+    s = (1.33 * female + 4.56 * log(bili) + 0.82 * (137 - na)
+         - 0.24 * (137 - na) * log(bili) + 9.09 * log(inr)
+         + 11.14 * log(cr) + 1.85 * (3.5 - alb)
+         - 1.83 * (3.5 - alb) * log(cr) + 6)
+    return min(round(s), 40)`},
+
+{id:"rass",title:"RASS 镇静躁动评分",
+desc:"Richmond Agitation-Sedation Scale，−5 至 +4。PADIS 2018 建议机械通气成人采用浅镇静（常用目标 −2 ~ 0）。",
+tables:[{cap:"RASS",head:["分","术语","描述"],rows:[
+["+4","有攻击性 Combative","明显好斗、暴力，对医护人员构成直接危险"],["+3","非常躁动 Very agitated","拔/扯导管，具攻击性"],["+2","躁动 Agitated","频繁无目的动作，人机对抗"],
+["+1","不安 Restless","焦虑，但动作无攻击性"],["0","清醒平静 Alert & calm",""],["−1","嗜睡 Drowsy","呼唤后持续清醒，睁眼+眼神接触 >10 s"],
+["−2","轻度镇静 Light","呼唤后短暂清醒，眼神接触 <10 s"],["−3","中度镇静 Moderate","呼唤后有动作或睁眼，但无眼神接触"],
+["−4","深度镇静 Deep","对声音无反应，物理刺激后有动作或睁眼"],["−5","不可唤醒 Unarousable","对声音及物理刺激均无反应"]]},
+{cap:"评估步骤",head:["步骤","操作","得分范围"],rows:[["1","观察患者 30 s","0 ~ +4"],["2","呼唤名字并让其睁眼看你","−1 ~ −3"],["3","无反应 → 摇肩/按压胸骨","−4 / −5"]]}],
+notes:["RASS ≥ −3 才能进行 CAM-ICU 评估","深镇静仅用于特定指征：严重 ARDS 早期需肌松、ICP 增高、癫痫持续状态等","镇痛优先（analgesia-first），每日唤醒 SAT 与 SBT 联合（ABCDEF bundle）"],
+refs:"Sessler CN, AJRCCM 2002 · Ely EW, JAMA 2003 · Devlin JW, Crit Care Med 2018 (PADIS)",
+tests:["test_rass_range_minus5_plus4","test_light_target_minus2_0","test_over_sedated_flag","test_cam_eligible_ge_minus3"],
+demo:["sedation_flag(rass=-4) → <span class='wr'>OVER_SEDATED → consider SAT / reduce dose</span>","cam_eligible(-4) → <span class='er'>False</span>   cam_eligible(-2) → <span class='ok'>True</span>"],
+code:`"""Richmond Agitation-Sedation Scale (Sessler, AJRCCM 2002). PADIS 2018: light sedation."""
+
+RASS = {
+    +4: "Combative - violent, immediate danger to staff",
+    +3: "Very agitated - pulls or removes tubes, aggressive",
+    +2: "Agitated - frequent non-purposeful movement, fights ventilator",
+    +1: "Restless - anxious, movements not aggressive",
+     0: "Alert and calm",
+    -1: "Drowsy - sustained awakening to voice, eye contact > 10 s",
+    -2: "Light sedation - briefly awakens to voice, eye contact < 10 s",
+    -3: "Moderate sedation - movement or eye opening to voice, no eye contact",
+    -4: "Deep sedation - no response to voice, moves to physical stimulation",
+    -5: "Unarousable - no response to voice or physical stimulation",
+}
+
+def target_range(goal: str = "light") -> tuple[int, int]:
+    return (-2, 0) if goal == "light" else (-5, -4)   # deep: specific indications only
+
+def sedation_flag(rass: int, goal: str = "light") -> str:
+    lo, hi = target_range(goal)
+    if rass > hi:
+        return "UNDER_SEDATED - check pain / delirium first"
+    if rass < lo:
+        return "OVER_SEDATED -> consider SAT / reduce dose"
+    return "AT_TARGET"
+
+def cam_eligible(rass: int) -> bool:
+    return rass >= -3`},
+
+{id:"cam_icu",title:"CAM-ICU · ICDSC 谵妄评估",
+desc:"CAM-ICU：特征 1 + 特征 2 + (特征 3 或 4) = 谵妄阳性。前提 RASS ≥ −3。",
+tables:[{cap:"CAM-ICU",head:["特征","内容","阳性标准"],rows:[
+["1 急性改变或波动","较基线的急性精神状态改变，或 24 h 内波动（RASS/GCS 变化）","是"],
+["2 注意力不集中","读 SAVEAHAART，听到 A 时捏手","错误 >2 个"],
+["3 意识水平改变","当前 RASS","RASS ≠ 0"],
+["4 思维紊乱","4 个是非题 + 指令（举起这么多手指，换手做）","错误 >1 个"]]},
+{cap:"是非题（Set A）",head:["问题","答案"],rows:[["石头会浮在水面上吗？","否"],["海里有鱼吗？","是"],["1 斤比 2 斤重吗？","否"],["锤子能钉钉子吗？","是"]]},
+{cap:"ICDSC（每项 0/1，≥4 谵妄，1–3 亚综合征谵妄）",head:["#","条目"],rows:[["1","意识水平改变"],["2","注意力不集中"],["3","定向障碍"],["4","幻觉/妄想/精神病性"],["5","精神运动性激越或迟滞"],["6","言语或情绪不当"],["7","睡眠-觉醒周期紊乱"],["8","症状波动"]]}],
+notes:["低活动型谵妄最常见且最易漏诊","PADIS 2018：不建议常规用抗精神病药预防或治疗谵妄；避免苯二氮䓬类"],
+refs:"Ely EW, JAMA 2001 · Bergeron N, Intensive Care Med 2001 · Devlin JW, Crit Care Med 2018",
+tests:["test_unable_to_assess_rass_le_minus4","test_inattention_gt_2_errors","test_f3_rass_nonzero","test_disorganized_gt_1_error","test_positive_logic_f1_f2_f3or4"],
+demo:["rass=-1  F1=True  SAVEAHAART errors=4  → F2 <span class='er'>+</span>  F3 <span class='er'>+</span>","cam_icu(...) → <span class='er'>CAM-ICU POSITIVE</span>"],
+code:`"""CAM-ICU (Ely, JAMA 2001). Delirium = F1 + F2 + (F3 or F4). Requires RASS >= -3."""
+
+LETTERS = "SAVEAHAART"          # patient squeezes hand on every 'A'
+QUESTIONS = [
+    ("Will a stone float on water?", False),
+    ("Are there fish in the sea?", True),
+    ("Does one pound weigh more than two pounds?", False),
+    ("Can you use a hammer to pound a nail?", True),
+]
+
+def feature2_inattention(squeezes: list[bool]) -> bool:
+    errors = sum(s != (ch == "A") for s, ch in zip(squeezes, LETTERS))
+    return errors > 2
+
+def feature4_disorganized(answers: list[bool], follows_command: bool) -> bool:
+    errors = sum(a != q[1] for a, q in zip(answers, QUESTIONS)) + (not follows_command)
+    return errors > 1
+
+def cam_icu(rass: int, f1_acute_or_fluctuating: bool, squeezes, answers, follows_command) -> str:
+    if rass < -3:
+        return "UNABLE TO ASSESS (RASS -4/-5) - reassess later"
+    f2 = feature2_inattention(squeezes)
+    f3 = rass != 0
+    f4 = feature4_disorganized(answers, follows_command)
+    positive = f1_acute_or_fluctuating and f2 and (f3 or f4)
+    return "CAM-ICU POSITIVE" if positive else "CAM-ICU NEGATIVE"`},
+
+{id:"pain",title:"CPOT · BPS 疼痛评估",
+desc:"用于不能自述疼痛的 ICU 患者（PADIS 2018 推荐的两个行为学量表）。",
+tables:[{cap:"CPOT（每项 0–2，总分 0–8；>2 提示疼痛）",head:["条目","0","1","2"],rows:[
+["面部表情","放松","紧张（皱眉、眼眶紧缩）","痛苦面容（+紧闭双眼）"],["肢体活动","无活动","防卫（缓慢、触摸痛处）","躁动（拔管、试图坐起、攻击）"],
+["肌张力（被动屈伸上肢）","放松","紧张、僵硬","非常紧张或僵硬"],["人机同步（插管）","耐受","咳嗽但耐受","人机对抗"],["或 发声（未插管）","正常语调","叹息、呻吟","哭喊、啜泣"]]},
+{cap:"BPS（每项 1–4，总分 3–12；>5 提示显著疼痛）",head:["条目","1","2","3","4"],rows:[
+["面部表情","放松","部分紧张（皱眉）","完全紧张（闭眼）","痛苦面容"],["上肢","无活动","部分弯曲","完全弯曲伴手指屈曲","持续回缩"],
+["通气依从性","耐受活动","咳嗽，大部分时间耐受","人机对抗","无法控制通气"]]}],
+notes:["镇痛优先：先评估疼痛再加镇静","操作性疼痛（吸痰、翻身、拔管）可预先给阿片类"],
+refs:"Gélinas C, Am J Crit Care 2006 · Payen JF, Crit Care Med 2001 · Devlin JW, Crit Care Med 2018",
+tests:["test_cpot_bounds_0_8","test_cpot_cutoff_gt_2","test_bps_bounds_3_12","test_bps_cutoff_gt_5"],
+demo:["cpot(1, 1, 1, 2) → (<span class='wh'>5</span>, <span class='er'>pain</span>)   bps(2, 2, 3) → (<span class='wh'>7</span>, <span class='er'>pain</span>)","→ titrate opioid bolus, reassess in 15-30 min"],
+code:`"""Behavioural pain scales for non-communicative ICU patients (PADIS 2018)."""
+
+CPOT = {   # Gelinas, Am J Crit Care 2006 - each 0-2, total 0-8
+    "facial": ["relaxed", "tense", "grimacing"],
+    "body": ["absence of movements", "protection", "restlessness / agitation"],
+    "muscle": ["relaxed", "tense, rigid", "very tense or rigid"],
+    "vent_or_voice": ["tolerating / normal tone", "coughing but tolerating / moaning",
+                      "fighting ventilator / crying out"],
+}
+BPS = {    # Payen, Crit Care Med 2001 - each 1-4, total 3-12
+    "facial": ["relaxed", "partially tightened", "fully tightened", "grimacing"],
+    "upper_limbs": ["no movement", "partially bent", "fully bent + finger flexion",
+                    "permanently retracted"],
+    "ventilation": ["tolerating movement", "coughing but tolerating",
+                    "fighting ventilator", "unable to control ventilation"],
+}
+
+def cpot(facial: int, body: int, muscle: int, vent_or_voice: int) -> tuple[int, bool]:
+    s = facial + body + muscle + vent_or_voice
+    return s, s > 2
+
+def bps(facial: int, upper_limbs: int, ventilation: int) -> tuple[int, bool]:
+    s = facial + upper_limbs + ventilation
+    return s, s > 5
+
+def analgesia_first(pain_positive: bool) -> str:
+    if pain_positive:
+        return "titrate opioid bolus, reassess in 15-30 min"
+    return "maintain; reassess q4h and before procedures"`},
+
+{id:"news2",lang:"ts",path:"web/src/scores/news2.ts",title:"NEWS2 早期预警评分",
+desc:"病房患者恶化识别与 ICU 会诊/转入触发。SpO₂ Scale 2 用于高碳酸血症型呼衰（目标 88–92%）。",
+tables:[{cap:"NEWS2",head:["参数","3","2","1","0","1","2","3"],rows:[
+["RR","≤8","","9–11","12–20","","21–24","≥25"],["SpO₂ Scale 1 %","≤91","92–93","94–95","≥96","","",""],["吸氧","","是","","空气","","",""],
+["SBP","≤90","91–100","101–110","111–219","","","≥220"],["HR","≤40","","41–50","51–90","91–110","111–130","≥131"],
+["意识","","","","Alert","","","新发 C/V/P/U"],["体温 ℃","≤35.0","","35.1–36.0","36.1–38.0","38.1–39.0","≥39.1",""]]},
+{cap:"临床反应",head:["总分","风险","反应"],rows:[["0–4","低","病房常规监测"],["任一单项 3 分","低–中","紧急床旁评估"],["5–6","中","紧急评估，考虑升级"],["≥7","高","紧急 / 重症团队评估，考虑转 ICU"]]}],
+notes:["C = new Confusion（新发意识混乱）","只要有一个参数得 3 分就需要紧急评估"],
+refs:"Royal College of Physicians. NEWS2, 2017",
+tests:["news2 > healthy adult scores 0","news2 > any single red parameter → low-medium","news2 > on O2 adds 2","news2 > score ≥7 → high"],
+demo:["RR 24(2) SpO₂ 93(2) O₂(2) SBP 98(2) HR 112(2) Alert(0) T 38.4(1)","news2(obs) → { score: <span class='wh'>11</span>, risk: <span class='er'>'high'</span> }"],
+code:`// NEWS2 - Royal College of Physicians 2017. Ward deterioration -> ICU review trigger.
+type Band = [number, number, number];   // [lo, hi, points]
+
+const RR: Band[]     = [[0, 8, 3], [9, 11, 1], [12, 20, 0], [21, 24, 2], [25, 99, 3]];
+const SPO2_1: Band[] = [[0, 91, 3], [92, 93, 2], [94, 95, 1], [96, 100, 0]];
+const SBP: Band[]    = [[0, 90, 3], [91, 100, 2], [101, 110, 1], [111, 219, 0], [220, 999, 3]];
+const HR: Band[]     = [[0, 40, 3], [41, 50, 1], [51, 90, 0], [91, 110, 1], [111, 130, 2], [131, 999, 3]];
+const TEMP: Band[]   = [[0, 35.0, 3], [35.1, 36.0, 1], [36.1, 38.0, 0], [38.1, 39.0, 1], [39.1, 45, 2]];
+
+const pts = (x: number, bands: Band[]): number =>
+  bands.find(([lo, hi]) => x >= lo && x <= hi)?.[2] ?? 0;
+
+export interface Obs {
+  rr: number; spo2: number; onO2: boolean; sbp: number; hr: number; cvpu: boolean; temp: number;
+}
+
+export function news2(o: Obs): { score: number; risk: string } {
+  const parts = [pts(o.rr, RR), pts(o.spo2, SPO2_1), o.onO2 ? 2 : 0, pts(o.sbp, SBP),
+                 pts(o.hr, HR), o.cvpu ? 3 : 0, pts(Math.round(o.temp * 10) / 10, TEMP)];
+  const score = parts.reduce((a, b) => a + b, 0);
+  const red = parts.some((p) => p === 3);
+  const risk = score >= 7 ? "high" : score >= 5 ? "medium" : red ? "low-medium" : "low";
+  return { score, risk };
+}`},
+
+{id:"kdigo_aki",title:"KDIGO AKI 分期",
+desc:"按血肌酐或尿量中较重者分期。",
+tables:[{cap:"AKI 定义（满足任一）",head:["标准",""],rows:[["48 h 内 SCr 升高","≥26.5 µmol/L (≥0.3 mg/dL)"],["7 天内 SCr 升高","≥1.5 × 基线"],["尿量","<0.5 mL/kg/h 持续 6 h"]]},
+{cap:"分期",head:["分期","血肌酐","尿量"],rows:[
+["1","1.5–1.9 × 基线 或 ↑≥26.5 µmol/L","<0.5 mL/kg/h × 6–12 h"],["2","2.0–2.9 × 基线","<0.5 mL/kg/h × ≥12 h"],
+["3","3.0 × 基线 或 SCr ≥353.6 µmol/L (≥4.0 mg/dL) 或 开始 RRT 或 <18 岁 eGFR <35","<0.3 mL/kg/h × ≥24 h 或 无尿 ≥12 h"]]}],
+notes:["基线未知时可取入院 7 天内最低值或 MDRD 反推","KDIGO bundle（PrevAKI）：停肾毒性药、优化容量与灌注、监测 SCr 与尿量、避免高血糖、避免造影剂"],
+refs:"KDIGO AKI Guideline, Kidney Int Suppl 2012 · Meersch M, Intensive Care Med 2017 (PrevAKI)",
+tests:["test_ratio_1_5_is_stage1","test_absolute_rise_26_5_in_48h","test_cr_ge_353_6_is_stage3","test_rrt_is_stage3","test_uo_trailing_run","test_worse_of_cr_and_uo"],
+demo:["baseline 80 µmol/L → Cr 172 (×2.15) → by_cr <span class='wh'>2</span>","UO <0.5 mL/kg/h for 8 h → by_uo <span class='wh'>1</span>","kdigo(...) → <span class='er'>Stage 2</span>"],
+code:`"""KDIGO 2012 AKI staging - creatinine OR urine output, whichever is worse."""
+
+def stage_by_cr(cr_umol, baseline_umol, rise_48h_umol=0.0, rrt=False) -> int:
+    ratio = cr_umol / baseline_umol
+    if rrt or ratio >= 3.0 or cr_umol >= 353.6:
+        return 3
+    if ratio >= 2.0:
+        return 2
+    if ratio >= 1.5 or rise_48h_umol >= 26.5:
+        return 1
+    return 0
+
+def _trailing_hours_below(uo: list[float], threshold: float) -> int:
+    n = 0
+    for x in reversed(uo):              # hourly mL/kg/h, most recent last
+        if x >= threshold:
+            break
+        n += 1
+    return n
+
+def stage_by_uo(uo_ml_kg_h: list[float]) -> int:
+    if _trailing_hours_below(uo_ml_kg_h, 0.3) >= 24 or _trailing_hours_below(uo_ml_kg_h, 0.01) >= 12:
+        return 3
+    h = _trailing_hours_below(uo_ml_kg_h, 0.5)
+    return 2 if h >= 12 else 1 if h >= 6 else 0
+
+def kdigo(cr, baseline, uo, rise_48h=0.0, rrt=False) -> int:
+    return max(stage_by_cr(cr, baseline, rise_48h, rrt), stage_by_uo(uo))`},
+
+{id:"ards",title:"ARDS：Berlin / 2023 全球定义 · 肺保护通气",
+desc:"柏林定义（2012）+ 2023 全球新定义（纳入 HFNO 与 SpO₂/FiO₂），以及 ARDSNet 通气目标。",
+tables:[{cap:"Berlin 定义",head:["项目","标准"],rows:[["时间","已知诱因后 1 周内新发或加重"],["影像","双肺浸润影，不能用积液、肺不张、结节完全解释"],["来源","不能完全由心衰或液体过负荷解释（必要时超声心动图）"],["氧合","PEEP/CPAP ≥5 cmH₂O 下评估"]]},
+{cap:"严重度",head:["分级","P/F（PEEP ≥5）","S/F（2023，SpO₂ ≤97%）"],rows:[["轻度","200 < P/F ≤ 300","235 < S/F ≤ 315"],["中度","100 < P/F ≤ 200","148 < S/F ≤ 235"],["重度","P/F ≤ 100","S/F ≤ 148"]]},
+{cap:"ARDSNet 低 PEEP / FiO₂ 表",head:["FiO₂","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0"],rows:[["PEEP","5","5–8","8–10","10","10–14","14","14–18","18–24"]]},
+{cap:"通气目标",head:["参数","目标"],rows:[["Vt","6 mL/kg PBW（4–8）"],["PBW 男 / 女","50 / 45.5 + 0.91 × (身高 cm − 152.4)"],["Pplat","≤30 cmH₂O"],["驱动压 ΔP","<15 cmH₂O"],["俯卧位","P/F <150 → ≥16 h/d"]]}],
+notes:["2023 全球定义：非插管患者 HFNO ≥30 L/min 或 NIV/CPAP PEEP ≥5 时 P/F ≤300 或 S/F ≤315 即可诊断；资源受限地区可不要求 PEEP/氧疗条件","重度 ARDS 难治性低氧：考虑 VV-ECMO（EOLIA）"],
+refs:"ARDS Definition Task Force, JAMA 2012 · Matthay MA, AJRCCM 2024 · ARDSNet, NEJM 2000 · Amato MB, NEJM 2015 · Guérin C, NEJM 2013",
+tests:["test_pbw_male_female","test_berlin_requires_peep_ge_5","test_global_hfno_30","test_sf_315_threshold","test_lung_protective_targets"],
+demo:["pbw(170, male) → <span class='wh'>66.0 kg</span> → Vt 6 mL/kg = <span class='wh'>396 mL</span>","berlin_severity(pf=140, peep=10) → <span class='wr'>'moderate'</span>","pplat 27, peep 10 → ΔP 17 → driving_pressure_ok=<span class='er'>False</span>"],
+code:`"""ARDS: Berlin (JAMA 2012) + Global definition (Matthay, AJRCCM 2024) + ARDSNet ventilation."""
+
+def pbw(height_cm: float, male: bool) -> float:
+    return (50.0 if male else 45.5) + 0.91 * (height_cm - 152.4)
+
+def berlin_severity(pf: float, peep: float) -> str | None:
+    if peep < 5:
+        return None
+    return "severe" if pf <= 100 else "moderate" if pf <= 200 else "mild" if pf <= 300 else None
+
+def global_severity_sf(sf: float, spo2: float) -> str | None:
+    if spo2 > 97:                       # S/F unreliable on flat part of ODC
+        return None
+    return "severe" if sf <= 148 else "moderate" if sf <= 235 else "mild" if sf <= 315 else None
+
+def global_nonintubated(pf=None, sf=None, hfno_lpm=0, niv_peep=0) -> bool:
+    supported = hfno_lpm >= 30 or niv_peep >= 5
+    hypox = (pf is not None and pf <= 300) or (sf is not None and sf <= 315)
+    return supported and hypox
+
+# ARDSNet lower PEEP / higher FiO2 table
+LOW_PEEP = [(0.3, 5), (0.4, 5), (0.4, 8), (0.5, 8), (0.5, 10), (0.6, 10), (0.7, 10),
+            (0.7, 12), (0.7, 14), (0.8, 14), (0.9, 14), (0.9, 16), (0.9, 18),
+            (1.0, 18), (1.0, 20), (1.0, 22), (1.0, 24)]
+
+def lung_protective(height_cm, male, pplat, peep) -> dict:
+    dp = pplat - peep
+    return {"vt_ml": round(pbw(height_cm, male) * 6),
+            "pplat_ok": pplat <= 30,
+            "driving_pressure_ok": dp < 15}`},
+
+{id:"dic",title:"ISTH 显性 DIC · SIC 脓毒症诱导凝血病",
+desc:"ISTH 评分 ≥5 = 显性 DIC；SIC 用于脓毒症早期凝血障碍识别（更早、更敏感）。",
+tables:[{cap:"ISTH overt DIC（需存在可致 DIC 的基础疾病）",head:["指标","0","1","2","3"],rows:[["PLT ×10⁹/L","≥100","50–<100","<50",""],["D-dimer / FDP","不升高","","中度升高","显著升高"],["PT 延长","<3 s","3–<6 s","≥6 s",""],["纤维蛋白原","≥1.0 g/L","<1.0 g/L","",""]]},
+{cap:"SIC（总分 ≥4 且 PT+PLT 两项之和 >2）",head:["指标","0","1","2"],rows:[["PT-INR","≤1.2",">1.2",">1.4"],["PLT ×10⁹/L","≥150","100–<150","<100"],["SOFA（呼吸+循环+肝+肾 之和）","0","1","≥2"]]}],
+notes:["D-dimer 的“中度/显著”阈值依各实验室而定","ISTH 2019 指南推荐两步法：先 SIC 筛查，再 ISTH overt DIC"],
+refs:"Taylor FB, Thromb Haemost 2001 · Iba T, BMJ Open 2017 · Iba T, J Thromb Haemost 2019",
+tests:["test_isth_plt_bands","test_isth_ddimer_levels","test_isth_cutoff_ge_5","test_sic_sofa4_capped_2","test_sic_requires_coag_gt_2"],
+demo:["PLT 62(1) D-dimer strong(3) PT +4.5 s(1) Fib 0.9(1) → ISTH <span class='wh'>6</span> → <span class='er'>overt DIC</span>","INR 1.6(2) PLT 62(2) SOFA4=5(2) → SIC <span class='wh'>6</span> → <span class='er'>SIC +</span>"],
+code:`"""ISTH overt DIC (Taylor, Thromb Haemost 2001) + Sepsis-induced coagulopathy (Iba, BMJ Open 2017)."""
+
+DDIMER = {"none": 0, "moderate": 2, "strong": 3}     # lab-specific cut-offs
+
+def isth_overt_dic(plt, ddimer_level: str, pt_prolong_s, fib_g_l) -> tuple[int, bool]:
+    s = 0 if plt >= 100 else 1 if plt >= 50 else 2
+    s += DDIMER[ddimer_level]
+    s += 0 if pt_prolong_s < 3 else 1 if pt_prolong_s < 6 else 2
+    s += 1 if fib_g_l < 1.0 else 0
+    return s, s >= 5
+
+def sic_score(inr: float, plt: float, sofa4: int) -> tuple[int, bool]:
+    """sofa4 = resp + cardiovascular + hepatic + renal SOFA (capped at 2 points)"""
+    coag = (0 if inr <= 1.2 else 1 if inr <= 1.4 else 2) + (0 if plt >= 150 else 1 if plt >= 100 else 2)
+    s = coag + min(sofa4, 2)
+    return s, s >= 4 and coag > 2
+
+def two_step(inr, plt, sofa4, ddimer_level, pt_prolong_s, fib_g_l) -> str:
+    sic, sic_pos = sic_score(inr, plt, sofa4)
+    if not sic_pos:
+        return f"SIC {sic} - negative, repeat daily"
+    isth, overt = isth_overt_dic(plt, ddimer_level, pt_prolong_s, fib_g_l)
+    return f"SIC {sic} + ISTH {isth} -> {'OVERT DIC' if overt else 'SIC (non-overt)'}"`},
+
+{id:"padua",title:"Padua VTE 风险评分（内科患者）",
+desc:"≥4 分为 VTE 高危，无禁忌时给予药物预防。外科患者常用 Caprini。",
+tables:[{cap:"Padua Prediction Score",head:["危险因素","分"],rows:[["活动性肿瘤","3"],["既往 VTE（除浅静脉血栓）","3"],["活动减少（卧床 ≥3 天）","3"],["已知易栓症","3"],["近 1 月创伤和/或手术","2"],["年龄 ≥70","1"],["心力衰竭和/或呼吸衰竭","1"],["急性心梗或缺血性卒中","1"],["急性感染和/或风湿病","1"],["肥胖 BMI ≥30","1"],["正在激素治疗","1"]]}],
+notes:["ICU 患者几乎都 ≥4 分 → 关键在于评估出血风险","高出血风险：机械预防（IPC）；ICU 不推荐单用弹力袜","CrCl <30 mL/min：UFH 优先或依诺肝素减量"],
+refs:"Barbar S, J Thromb Haemost 2010 · Schünemann HJ, Blood Adv 2018 (ASH VTE prophylaxis)",
+tests:["test_padua_weights","test_high_risk_ge_4","test_prophylaxis_bleeding_ipc","test_renal_ufh"],
+demo:["age≥70(1) + infection(1) + resp_failure(1) + reduced_mobility(3) → Padua <span class='wh'>6</span> → <span class='er'>HIGH</span>","prophylaxis(6, bleeding_high=False, crcl=24) → <span class='wh'>UFH 5000 U SC q8-12h</span>"],
+code:`"""Padua Prediction Score for VTE in medical inpatients (Barbar, J Thromb Haemost 2010)."""
+
+PADUA = {
+    "active_cancer": 3, "previous_vte": 3, "reduced_mobility": 3, "thrombophilia": 3,
+    "recent_trauma_or_surgery_1m": 2,
+    "age_ge_70": 1, "heart_or_resp_failure": 1, "acute_mi_or_ischemic_stroke": 1,
+    "acute_infection_or_rheum": 1, "obesity_bmi_ge_30": 1, "hormonal_treatment": 1,
+}
+
+def padua(**flags: bool) -> tuple[int, str]:
+    s = sum(PADUA[k] for k, v in flags.items() if v)
+    return s, "HIGH" if s >= 4 else "low"
+
+def prophylaxis(score: int, bleeding_high: bool, crcl_ml_min: float) -> str:
+    if score < 4:
+        return "early mobilisation, no pharmacologic prophylaxis"
+    if bleeding_high:
+        return "IPC (mechanical) until bleeding risk falls"
+    if crcl_ml_min < 30:
+        return "UFH 5000 U SC q8-12h"
+    return "enoxaparin 40 mg SC qd"`},
+
+{id:"braden",title:"Braden 压力性损伤风险评分",
+desc:"6 个条目，总分 6–23；分数越低风险越高。",
+tables:[{cap:"Braden Scale",head:["条目","1","2","3","4"],rows:[
+["感知觉","完全受限","非常受限","轻度受限","无损害"],["潮湿","持续潮湿","非常潮湿","偶尔潮湿","很少潮湿"],["活动","卧床","坐椅","偶尔行走","经常行走"],
+["移动","完全不能","非常受限","轻度受限","不受限"],["营养","非常差","可能不足","充足","良好"],["摩擦力/剪切力","有问题","潜在问题","无明显问题","—"]]},
+{cap:"风险分层",head:["总分","风险"],rows:[["≤9","极高危"],["10–12","高危"],["13–14","中危"],["15–18","轻危"],["≥19","无风险"]]}],
+notes:["ICU 患者额外关注医疗器械相关压力性损伤（面罩、气管导管、胃管）","每 2 h 翻身 / 气垫床 / 营养支持"],
+refs:"Bergstrom N, Nurs Res 1987",
+tests:["test_item_ranges","test_friction_max_3","test_total_6_23","test_risk_bands"],
+demo:["sensory 2 · moisture 2 · activity 1 · mobility 2 · nutrition 2 · friction 1","braden(...) → (<span class='wh'>10</span>, <span class='er'>'high'</span>)"],
+code:`"""Braden Scale for pressure-injury risk (Bergstrom, Nurs Res 1987). Lower = higher risk."""
+
+BRADEN = {
+    "sensory_perception": (1, 4), "moisture": (1, 4), "activity": (1, 4),
+    "mobility": (1, 4), "nutrition": (1, 4), "friction_shear": (1, 3),
+}
+
+def braden(**items: int) -> tuple[int, str]:
+    assert set(items) == set(BRADEN), "all six items required"
+    for k, v in items.items():
+        lo, hi = BRADEN[k]
+        assert lo <= v <= hi, f"{k} out of range"
+    s = sum(items.values())
+    band = ("very high" if s <= 9 else "high" if s <= 12 else "moderate" if s <= 14
+            else "mild" if s <= 18 else "no risk")
+    return s, band
+
+def turning_interval_h(band: str) -> int:
+    return {"very high": 2, "high": 2, "moderate": 3, "mild": 4}.get(band, 4)`},
+
+{id:"nutric",title:"NUTRIC / mNUTRIC 营养风险评分",
+desc:"重症患者营养风险。mNUTRIC（不含 IL-6，0–9）≥5 为高风险，最可能从积极营养治疗获益。",
+tables:[{cap:"NUTRIC",head:["变量","0","1","2","3"],rows:[["年龄","<50","50–<75","≥75",""],["APACHE II","<15","15–<20","20–<28","≥28"],["SOFA","<6","6–<10","≥10",""],["合并症数","0–1","≥2","",""],["入院至入 ICU 天数","0–<1","≥1","",""],["IL-6 (pg/mL)*","<400","≥400","",""]]},
+{cap:"判读",head:["版本","范围","高风险"],rows:[["mNUTRIC（无 IL-6）","0–9","≥5"],["NUTRIC（含 IL-6）","0–10","≥6"]]}],
+notes:["ESPEN 2019：早期（第 1–3 天）低热卡 <70% 能量消耗，3 天后逐步达 80–100%","蛋白质逐步达 1.3 g/kg/d；优先间接测热法","无禁忌时 48 h 内开始早期肠内营养"],
+refs:"Heyland DK, Crit Care 2011 · Rahman A, Clin Nutr 2016 · Singer P, Clin Nutr 2019 (ESPEN ICU)",
+tests:["test_age_bands","test_apache_bands","test_sofa_bands","test_modified_cutoff_ge_5","test_full_cutoff_ge_6"],
+demo:["age 68(1) APACHE 21(2) SOFA 9(1) comorbid 3(1) days 2(1) → mNUTRIC <span class='wh'>6</span> → <span class='er'>HIGH</span>","energy_target(70 kg, day 1) → trophic / &lt;70% EE (~875 kcal)"],
+code:`"""(m)NUTRIC - nutrition risk in the critically ill (Heyland 2011; Rahman, Clin Nutr 2016)."""
+
+def nutric(age, apache2, sofa, n_comorbid, days_hosp_to_icu, il6=None) -> tuple[int, bool]:
+    s = 0 if age < 50 else 1 if age < 75 else 2
+    s += 0 if apache2 < 15 else 1 if apache2 < 20 else 2 if apache2 < 28 else 3
+    s += 0 if sofa < 6 else 1 if sofa < 10 else 2
+    s += 1 if n_comorbid >= 2 else 0
+    s += 1 if days_hosp_to_icu >= 1 else 0
+    if il6 is None:                        # modified NUTRIC, 0-9
+        return s, s >= 5
+    s += 1 if il6 >= 400 else 0            # full NUTRIC, 0-10
+    return s, s >= 6
+
+def energy_target(weight_kg: float, icu_day: int) -> str:
+    """ESPEN 2019: hypocaloric (<70% EE) early, 80-100% after day 3"""
+    kcal = 25 * weight_kg
+    if icu_day <= 3:
+        return f"trophic / <70% EE (~{round(0.5 * kcal)} kcal)"
+    return f"80-100% EE (~{round(0.9 * kcal)} kcal), protein 1.3 g/kg/d"`},
+
+{id:"cap_severity",title:"重症社区获得性肺炎：CURB-65 · ATS/IDSA 标准",
+desc:"CURB-65 用于分诊；ATS/IDSA 重症 CAP 标准决定是否收入 ICU。",
+tables:[{cap:"CURB-65（每项 1 分）",head:["字母","标准"],rows:[["C","新发意识障碍"],["U","尿素 >7 mmol/L（BUN >19 mg/dL）"],["R","RR ≥30 次/分"],["B","SBP <90 或 DBP ≤60 mmHg"],["65","年龄 ≥65 岁"]]},
+{cap:"CURB-65 判读",head:["分","风险","处置"],rows:[["0–1","低","门诊"],["2","中","住院"],["3–5","高","住院，4–5 分考虑 ICU"]]},
+{cap:"ATS/IDSA 重症 CAP（1 主要 或 ≥3 次要）",head:["类别","标准"],rows:[["主要","需血管活性药的感染性休克；需有创机械通气"],["次要","RR ≥30；P/F ≤250；多肺叶浸润；意识障碍；BUN ≥20 mg/dL；WBC <4×10⁹/L；PLT <100×10⁹/L；T <36℃；低血压需积极液体复苏"]]}],
+notes:["重症 CAP 经验治疗：β-内酰胺 + 大环内酯（或 + 呼吸喹诺酮）","ATS/IDSA 2019 不推荐用 PCT 决定是否启动抗生素"],
+refs:"Lim WS, Thorax 2003 · Metlay JP, AJRCCM 2019 (ATS/IDSA CAP)",
+tests:["test_curb65_each_item","test_bp_or_logic","test_major_criterion_shortcut","test_three_minor_criteria"],
+demo:["confusion + urea 9.1 + RR 32 + SBP 88 + age 71 → CURB-65 <span class='wh'>5</span>","minor criteria 4/9 → ats_idsa_severe → <span class='er'>True → ICU</span>"],
+code:`"""Severe CAP: CURB-65 (Lim, Thorax 2003) + ATS/IDSA criteria (Metlay, AJRCCM 2019)."""
+
+def curb65(confusion: bool, urea_mmol: float, rr: int, sbp: int, dbp: int, age: int):
+    s = confusion + (urea_mmol > 7) + (rr >= 30) + (sbp < 90 or dbp <= 60) + (age >= 65)
+    if s <= 1:
+        return s, "low - consider outpatient"
+    return s, "moderate - admit" if s == 2 else "severe - consider ICU if 4-5"
+
+MINOR = ["rr_ge_30", "pf_le_250", "multilobar", "confusion", "bun_ge_20mgdl",
+         "wbc_lt_4", "plt_lt_100", "temp_lt_36", "hypotension_needs_fluids"]
+
+def ats_idsa_severe(septic_shock_on_pressors: bool, mech_vent: bool, **minor: bool) -> bool:
+    if septic_shock_on_pressors or mech_vent:      # any major criterion
+        return True
+    return sum(bool(minor.get(k)) for k in MINOR) >= 3`},
+
+{id:"pancreatitis",title:"急性胰腺炎：BISAP · 改良 Marshall · 修订版 Atlanta",
+desc:"BISAP 早期预测死亡；改良 Marshall 定义器官衰竭（任一系统 ≥2 分）；Atlanta 2012 分级。",
+tables:[{cap:"BISAP（24 h 内，每项 1 分；≥3 死亡风险显著升高）",head:["字母","标准"],rows:[["B","BUN >25 mg/dL（>8.9 mmol/L）"],["I","意识障碍（GCS <15）"],["S","SIRS ≥2 项"],["A","年龄 >60"],["P","胸腔积液"]]},
+{cap:"改良 Marshall",head:["系统","0","1","2","3","4"],rows:[["呼吸 P/F",">400","301–400","201–300","101–200","≤101"],["肾 Cr µmol/L","<134","134–169","170–310","311–439",">439"],["循环 SBP","≥90","<90 补液有效","<90 补液无效","<90, pH <7.3","<90, pH <7.2"]]},
+{cap:"修订版 Atlanta 严重度",head:["分级","定义"],rows:[["轻症","无器官衰竭，无局部/全身并发症"],["中重症","一过性器官衰竭（<48 h）和/或局部并发症"],["重症","持续器官衰竭（>48 h）"]]}],
+notes:["早期适度液体复苏（WATERFALL：积极补液未获益且增加液体过负荷）","无感染证据不常规预防性使用抗生素"],
+refs:"Wu BU, Gut 2008 · Banks PA, Gut 2013 · de-Madaria E, NEJM 2022 (WATERFALL)",
+tests:["test_bisap_items","test_marshall_resp_bands","test_marshall_renal_bands","test_organ_failure_ge_2","test_atlanta_persistent_48h"],
+demo:["BUN 31(1) SIRS 3(1) age 64(1) → BISAP <span class='wh'>3</span>","marshall(pf=240) → resp <span class='wh'>2</span> → organ failure; persisted 72 h","atlanta(72, local=True) → <span class='er'>SEVERE</span>"],
+code:`"""Acute pancreatitis: BISAP (Wu, Gut 2008) + modified Marshall + Revised Atlanta (Banks, Gut 2013)."""
+
+def bisap(bun_mgdl, impaired_mental: bool, sirs_count: int, age: int, pleural_effusion: bool) -> int:
+    return (bun_mgdl > 25) + impaired_mental + (sirs_count >= 2) + (age > 60) + pleural_effusion
+
+def modified_marshall(pf, cr_umol, sbp, fluid_responsive=True, ph=None) -> dict:
+    resp = 4 if pf <= 101 else 3 if pf <= 200 else 2 if pf <= 300 else 1 if pf <= 400 else 0
+    renal = 0 if cr_umol < 134 else 1 if cr_umol < 170 else 2 if cr_umol <= 310 else 3 if cr_umol <= 439 else 4
+    cv = 0 if sbp >= 90 else 1 if fluid_responsive else 2
+    if sbp < 90 and ph is not None and ph < 7.3:
+        cv = 4 if ph < 7.2 else 3
+    return {"resp": resp, "renal": renal, "cv": cv}
+
+def organ_failure(m: dict) -> bool:
+    return any(v >= 2 for v in m.values())
+
+def atlanta(organ_failure_hours: float, local_complication: bool) -> str:
+    if organ_failure_hours > 48:
+        return "SEVERE (persistent organ failure)"
+    if organ_failure_hours > 0 or local_complication:
+        return "MODERATELY SEVERE"
+    return "MILD"`},
+
+{id:"sah",title:"蛛网膜下腔出血：Hunt-Hess · WFNS · 改良 Fisher",
+desc:"aSAH 临床分级与 CT 分级（预测迟发性脑缺血/血管痉挛）。",
+tables:[{cap:"Hunt-Hess",head:["级","表现"],rows:[["I","无症状或轻度头痛，轻度颈强直"],["II","中–重度头痛，颈强直，除脑神经麻痹外无神经功能缺损"],["III","嗜睡、意识模糊或轻度局灶缺损"],["IV","昏睡，中–重度偏瘫，可有早期去大脑强直"],["V","深昏迷，去大脑强直，濒死"]]},
+{cap:"WFNS",head:["级","GCS","运动缺损"],rows:[["I","15","无"],["II","13–14","无"],["III","13–14","有"],["IV","7–12","有或无"],["V","3–6","有或无"]]},
+{cap:"改良 Fisher（CT）",head:["级","CT 表现","症状性血管痉挛"],rows:[["0","无 SAH、无 IVH","—"],["1","薄层 SAH，无 IVH","24%"],["2","薄层 SAH，伴 IVH","33%"],["3","厚层 SAH，无 IVH","33%"],["4","厚层 SAH，伴 IVH","40%"]]}],
+notes:["尼莫地平 60 mg PO q4h × 21 天","动脉瘤处理前 SBP 常控制 <160 mmHg；维持等容，不推荐预防性 3H 治疗"],
+refs:"Hunt WE, J Neurosurg 1968 · Drake CG, J Neurosurg 1988 (WFNS) · Frontera JA, Neurosurgery 2006 · Hoh BL, Stroke 2023 (AHA/ASA aSAH)",
+tests:["test_wfns_gcs_mapping","test_wfns_motor_deficit_13_14","test_modified_fisher_ivh","test_nimodipine_regimen"],
+demo:["wfns(gcs=11, motor_deficit=False) → <span class='wh'>IV</span>","modified_fisher('thick', ivh=True) → <span class='wh'>4</span> (vasospasm ~40%)"],
+code:`"""aSAH grading: Hunt-Hess (1968), WFNS (1988), modified Fisher (Frontera, Neurosurgery 2006)."""
+
+HUNT_HESS = {
+    1: "asymptomatic or mild headache, slight nuchal rigidity",
+    2: "moderate-severe headache, nuchal rigidity, no deficit other than CN palsy",
+    3: "drowsy / confused, mild focal deficit",
+    4: "stupor, moderate-severe hemiparesis, early decerebrate posturing",
+    5: "deep coma, decerebrate rigidity, moribund",
+}
+
+def wfns(gcs: int, motor_deficit: bool) -> int:
+    if gcs == 15:
+        return 1
+    if gcs >= 13:
+        return 3 if motor_deficit else 2
+    return 4 if gcs >= 7 else 5
+
+def modified_fisher(sah: str, ivh: bool) -> int:
+    """sah: 'none' | 'thin' | 'thick'"""
+    if sah == "none":
+        return 0
+    return (1 if sah == "thin" else 3) + int(ivh)
+
+NIMODIPINE = {"dose_mg": 60, "route": "PO/NG", "interval_h": 4, "days": 21}`},
+
+{id:"ugib",title:"上消化道出血：Glasgow-Blatchford · Forrest 分级",
+desc:"GBS 预测是否需要干预（输血、内镜治疗、手术）；Forrest 指导内镜止血。",
+tables:[{cap:"Glasgow-Blatchford Score（0–23）",head:["指标","标准","分"],rows:[
+["BUN mmol/L","6.5–<8 / 8–<10 / 10–<25 / ≥25","2 / 3 / 4 / 6"],["Hb 男 g/dL","12–<13 / 10–<12 / <10","1 / 3 / 6"],["Hb 女 g/dL","10–<12 / <10","1 / 6"],
+["SBP mmHg","100–109 / 90–99 / <90","1 / 2 / 3"],["其他","HR ≥100 / 黑便 / 晕厥 / 肝病 / 心衰","1 / 1 / 2 / 2 / 2"]]},
+{cap:"Forrest",head:["分级","内镜表现","处理"],rows:[["Ia","喷射样出血","内镜止血"],["Ib","渗血","内镜止血"],["IIa","裸露血管","内镜止血"],["IIb","附着血凝块","考虑去除血凝块后处理"],["IIc","平坦色素斑","PPI，无需内镜止血"],["III","洁净溃疡基底","PPI"]]}],
+notes:["GBS ≤1 → 极低危，可考虑门诊处理","限制性输血：Hb <7 g/dL（心血管疾病 <8）","内镜止血后高剂量 PPI 72 h"],
+refs:"Blatchford O, Lancet 2000 · Laine L, Am J Gastroenterol 2021 (ACG) · Gralnek IM, Endoscopy 2021 (ESGE) · Villanueva C, NEJM 2013",
+tests:["test_bun_bands","test_hb_sex_specific","test_sbp_bands","test_minor_items","test_forrest_high_risk_set"],
+demo:["BUN 14.2(4) Hb 8.1 ♂(6) SBP 96(2) HR 112(1) melena(1) → GBS <span class='wh'>14</span>","endoscopy: Forrest <span class='er'>IIa</span> → high risk → endoscopic therapy"],
+code:`"""Upper GI bleeding: Glasgow-Blatchford (Blatchford, Lancet 2000) + Forrest classification."""
+
+def gbs(bun_mmol, hb_g_dl, male: bool, sbp, hr, melena, syncope, hepatic_dz, cardiac_failure) -> int:
+    s = 0 if bun_mmol < 6.5 else 2 if bun_mmol < 8 else 3 if bun_mmol < 10 else 4 if bun_mmol < 25 else 6
+    if male:
+        s += 0 if hb_g_dl >= 13 else 1 if hb_g_dl >= 12 else 3 if hb_g_dl >= 10 else 6
+    else:
+        s += 0 if hb_g_dl >= 12 else 1 if hb_g_dl >= 10 else 6
+    s += 0 if sbp >= 110 else 1 if sbp >= 100 else 2 if sbp >= 90 else 3
+    s += (hr >= 100) + melena + 2 * syncope + 2 * hepatic_dz + 2 * cardiac_failure
+    return s
+
+FORREST = {
+    "Ia": "spurting arterial bleeding",
+    "Ib": "oozing bleeding",
+    "IIa": "non-bleeding visible vessel",
+    "IIb": "adherent clot",
+    "IIc": "flat pigmented spot",
+    "III": "clean ulcer base",
+}
+HIGH_RISK = {"Ia", "Ib", "IIa"}        # endoscopic therapy; IIb: consider clot removal
+
+def very_low_risk(score: int) -> bool:
+    return score <= 1`},
+
+{id:"shock",title:"心源性休克：Killip · SCAI SHOCK 分期",
+desc:"Killip 用于急性心梗心衰分级；SCAI 分期（2019 / 2022 更新）描述休克严重度连续谱。",
+tables:[{cap:"Killip",head:["级","表现","院内死亡率（1967）"],rows:[["I","无心衰体征","6%"],["II","肺部啰音、S3、颈静脉怒张","17%"],["III","急性肺水肿","38%"],["IV","心源性休克","81%"]]},
+{cap:"SCAI SHOCK",head:["期","名称","特征"],rows:[["A","At risk","无低血压/低灌注（如大面积 AMI）"],["B","Beginning","低血压或心动过速，但无低灌注"],["C","Classic","低灌注，需要血管活性药或机械支持"],["D","Deteriorating","初始治疗无效，需升级"],["E","Extremis","难治性休克，CPR 中或 ECMO"]]},
+{cap:"血流动力学",head:["指标","意义"],rows:[["CPO = MAP × CO / 451","<0.6 W 提示预后差"],["CI","<2.2 L/min/m² 低心排"],["PAPi = (sPAP − dPAP) / RAP","<0.9 提示右室衰竭（AMI）"]]}],
+notes:["乳酸 ≥2 mmol/L 提示低灌注","SCAI 每一期可加修饰符 A（心脏骤停）"],
+refs:"Killip T, Am J Cardiol 1967 · Naidu SS, JACC 2022 · Fincke R, JACC 2004",
+tests:["test_killip_mapping","test_scai_arrest_is_E","test_scai_hypoperfusion_C","test_cpo_formula"],
+demo:["SBP 82  lactate 4.6  NE + dobutamine  worsening → SCAI <span class='er'>D</span>","cardiac_power_output(map=60, co=3.2) → <span class='wh'>0.43 W</span> (&lt;0.6)"],
+code:`"""Cardiogenic shock: Killip (1967) + SCAI SHOCK stages (Naidu, JACC 2022)."""
+
+KILLIP = {
+    1: "no clinical signs of heart failure",
+    2: "rales, S3, raised JVP",
+    3: "frank acute pulmonary oedema",
+    4: "cardiogenic shock (SBP < 90 + hypoperfusion)",
+}
+
+SCAI = {
+    "A": "At risk - no hypotension / hypoperfusion",
+    "B": "Beginning - hypotension or tachycardia WITHOUT hypoperfusion",
+    "C": "Classic - hypoperfusion requiring vasoactive / MCS",
+    "D": "Deteriorating - failing initial interventions",
+    "E": "Extremis - refractory shock, ongoing CPR or ECMO",
+}
+
+def scai_stage(sbp, lactate, n_vasoactive: int, on_mcs: bool, worsening: bool, arrest: bool) -> str:
+    if arrest:
+        return "E"
+    hypoperfusion = lactate >= 2.0
+    if worsening and (n_vasoactive >= 2 or on_mcs):
+        return "D"
+    if hypoperfusion and (n_vasoactive or on_mcs):
+        return "C"
+    if sbp < 90 or n_vasoactive:
+        return "C" if hypoperfusion else "B"
+    return "A"
+
+def cardiac_power_output(map_mmhg: float, co_l_min: float) -> float:
+    return map_mmhg * co_l_min / 451      # watts; < 0.6 W = poor prognosis`},
+
+{id:"mrc_icuaw",title:"MRC 总分 · ICU 获得性衰弱（ICU-AW）",
+desc:"双侧 6 组肌群，每组 0–5 分，总分 0–60。<48 诊断 ICU-AW，<36 为重度。",
+tables:[{cap:"肌群（双侧）",head:["上肢","下肢"],rows:[["肩外展","屈髋"],["屈肘","伸膝"],["伸腕","踝背屈"]]},
+{cap:"MRC 肌力分级",head:["级","表现"],rows:[["0","无收缩"],["1","可见/可触及收缩，无运动"],["2","去重力下可运动"],["3","可抗重力"],["4","可抗部分阻力"],["5","正常肌力"]]}],
+notes:["评估前提：患者清醒合作（RASS 0~+1，S5Q 标准化指令 ≥3/5）","危险因素：脓毒症、多器官衰竭、高血糖、制动、糖皮质激素、肌松药","早期活动与康复是主要干预"],
+refs:"De Jonghe B, JAMA 2002 · Hermans G, Muscle Nerve 2012 · Fan E, AJRCCM 2014 (ATS ICU-AW)",
+tests:["test_six_groups_each_side","test_sum_0_60","test_icuaw_lt_48","test_severe_lt_36","test_eligibility_rass"],
+demo:["left [3,4,3,3,3,4] + right [3,3,3,3,4,3] → MRC <span class='wh'>39</span>","mrc_sum(...) → <span class='er'>ICU-AW</span>"],
+code:`"""MRC sum score for ICU-acquired weakness (De Jonghe, JAMA 2002). 6 groups x 2 sides, 0-5 each."""
+
+GROUPS = ["shoulder abduction", "elbow flexion", "wrist extension",
+          "hip flexion", "knee extension", "ankle dorsiflexion"]
+
+MRC_GRADE = {0: "no contraction", 1: "flicker", 2: "movement with gravity eliminated",
+             3: "against gravity", 4: "against some resistance", 5: "normal power"}
+
+def eligible(rass: int, s5q_correct: int) -> bool:
+    """awake and cooperative: RASS 0~+1 and >= 3/5 standardized commands"""
+    return 0 <= rass <= 1 and s5q_correct >= 3
+
+def mrc_sum(left: list[int], right: list[int]) -> tuple[int, str]:
+    assert len(left) == len(right) == len(GROUPS)
+    assert all(0 <= x <= 5 for x in left + right)
+    s = sum(left) + sum(right)
+    if s < 36:
+        return s, "severe ICU-AW"
+    return s, "ICU-AW" if s < 48 else "no ICU-AW"`}
+];
+SCORES.forEach(s=>{s.lang=s.lang||"py";s.path=s.path||`src/icu_core/scores/${s.id}.py`;s.name=s.path.split("/").pop();});
+
+/* ===================================================================== */
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1)), pick=a=>a[Math.floor(Math.random()*a.length)];
+const pad=(n,l=2)=>String(n).padStart(l,"0");
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---------- syntax highlight (Dark+) ---------- */
+const KW1=new Set("def class lambda None True False self const let var function interface export type null undefined true false number string boolean Record".split(" "));
+const KW2=new Set("import from as return if elif else for in while with try except raise yield async await and or not is pass break continue assert".split(" "));
+function hl(s,lang){const cm=lang==="py"?"#.*$":"\\/\\/.*$";
+  const re=new RegExp(`(${cm})|("""[^"]*(?:"""|$)|[bf]?"(?:[^"\\\\]|\\\\.)*"?|'(?:[^'\\\\]|\\\\.)*'?)|\\b([A-Za-z_]\\w*)\\b(?=\\s*\\()|\\b([A-Za-z_]\\w*)\\b|\\b(\\d+(?:\\.\\d+)?(?:e-?\\d+)?)\\b`,"g");
+  let o="",last=0,m;
+  while((m=re.exec(s))){if(m[0]===""){re.lastIndex++;continue;}o+=esc(s.slice(last,m.index));last=re.lastIndex;
+    if(m[1])o+=`<span class="c">${esc(m[1])}</span>`;else if(m[2])o+=`<span class="s">${esc(m[2])}</span>`;
+    else if(m[3]){const w=m[3];o+=KW2.has(w)?`<span class="k2">${w}</span>`:KW1.has(w)?`<span class="k">${w}</span>`:`<span class="f">${w}</span>`;}
+    else if(m[4]){const w=m[4];o+=KW2.has(w)?`<span class="k2">${w}</span>`:KW1.has(w)?`<span class="k">${w}</span>`:/^[A-Z][a-z]/.test(w)?`<span class="cl">${w}</span>`:`<span class="v">${w}</span>`;}
+    else if(m[5])o+=`<span class="u">${m[5]}</span>`;}
+  return o+esc(s.slice(last));}
+
+/* ---------- explorer ---------- */
+const ICON={py:["Py","#4b8bbe"],ts:["TS","#3178c6"],sql:["DB","#d19a66"],yaml:["!","#cb4b16"],md:["M↓","#519aba"],toml:["⚙","#9c9c9c"],gitignore:["◆","#41535b"]};
+const TREE=[["d",0,".github"],["d",0,".vscode"],["d",0,"configs"],["d",0,"docs/scores"],["d",0,"notebooks"],["d",0,"sql"],["D",0,"src/icu_core"],
+  ["d",1,"cds"],["d",1,"imaging"],["d",1,"ingest"],["d",1,"models"],["d",1,"pipeline"],["D",1,"scores"]];
+SCORES.filter(s=>s.lang==="py").forEach(s=>TREE.push(["f",2,s.name]));
+TREE.push(["d",0,"tests"],["D",0,"web/src/scores"]);SCORES.filter(s=>s.lang==="ts").forEach(s=>TREE.push(["f",1,s.name]));
+TREE.push(["f",0,".gitignore"],["f",0,"pyproject.toml"],["f",0,"README.md"]);
+const treeEl=$("#tree"),fileRow={};
+TREE.forEach(([t,lv,name])=>{const d=document.createElement("div");d.className="tr"+(t==="f"?" f":"");d.style.paddingLeft=(8+lv*12)+"px";
+  if(t!=="f")d.innerHTML=`<span class="ar">${t==="D"?"▾":"▸"}</span><span class="nm">${name}</span>`;
+  else{const ext=name.split(".").pop(),ic=ICON[ext]||["·","#999"];d.innerHTML=`<span class="ar"></span><span class="ic" style="color:${ic[1]}">${ic[0]}</span><span class="nm">${name}</span><span class="gm"></span>`;fileRow[name]=d;
+    const idx=SCORES.findIndex(s=>s.name===name);if(idx>=0)d.addEventListener("click",()=>jump(idx));}
+  treeEl.appendChild(d);});
+
+/* ---------- preview ---------- */
+const pv=$("#pv");
+function renderPreview(S){
+  $("#pvtab").innerHTML=`<span style="color:#519aba;font:700 9px Consolas">M↓</span>Preview ${S.id}.md<span class="x">✕</span>`;
+  $("#pvcrumb").innerHTML=`docs <span style="opacity:.6">›</span> scores <span style="opacity:.6">›</span> ${S.id}.md`;
+  let h=`<h1>${S.title}</h1><p class="d">${S.desc}</p>`;
+  S.tables.forEach(t=>{h+=`<h3>${t.cap}</h3><table><tr>${t.head.map(x=>`<th>${x}</th>`).join("")}</tr>${t.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</table>`;});
+  if(S.notes)h+=`<h3>要点</h3><ul>${S.notes.map(n=>`<li>${n}</li>`).join("")}</ul>`;
+  h+=`<div class="ref">References: ${S.refs}</div>`;pv.innerHTML=h;pv.scrollTop=0;pvManual=false;}
+let pvManual=false;
+function syncPreview(p){if(pvManual)return;const max=pv.scrollHeight-pv.clientHeight;if(max>0)pv.scrollTop=Math.round(max*Math.min(1,Math.max(0,(p-.15)/.75)));}
+
+/* ---------- editor ---------- */
+const ed=$("#ed"),term=$("#term");let curS=null,lines=[],curLineEl=null,openTabs=[];
+function openFile(S){curS=S;if(!openTabs.includes(S))openTabs.push(S);if(openTabs.length>4)openTabs.shift();
+  $("#tabs").innerHTML=openTabs.map(o=>{const ic=ICON[o.lang];return `<div class="tab${o===S?" on":""}"><span style="color:${ic[1]};font:700 9px Consolas">${ic[0]}</span>${o.name}<span class="x">${o===S?"●":"✕"}</span></div>`;}).join("");
+  $("#crumb").innerHTML=S.path.split("/").map(esc).join(' <span style="opacity:.6">›</span> ');
+  document.querySelectorAll(".tr.on").forEach(e=>e.classList.remove("on"));const row=fileRow[S.name];row.classList.add("on","mod");row.querySelector(".gm").textContent="M";
+  const tt=row.offsetTop-treeEl.clientHeight/2;treeEl.scrollTop=Math.max(0,tt);
+  $("#wtitle").textContent=`● ${S.name} — cip-clinical-ml`;document.title=`${S.name} — cip-clinical-ml — Visual Studio Code`;
+  $("#lang").textContent=S.lang==="py"?"Python":"TypeScript";$("#interp").style.display=S.lang==="py"?"":"none";
+  $("#prog").textContent=`◷ scores ${SCORES.indexOf(S)+1}/${SCORES.length}`;
+  ed.innerHTML="";lines=[];renderPreview(S);drawMM();try{localStorage.setItem("cip.idx",SCORES.indexOf(S))}catch(e){}}
+function newLine(){if(curLineEl)curLineEl.classList.remove("cur");const d=document.createElement("div");d.className="l cur";
+  d.innerHTML=`<span class="n">${lines.length+1}</span><span class="x"></span>`;ed.appendChild(d);lines.push("");curLineEl=d;
+  ed.scrollTop=Math.max(0,d.offsetTop-ed.clientHeight*.55);drawMM();}
+function setLine(txt,cursor){lines[lines.length-1]=txt;curLineEl.lastChild.innerHTML=hl(txt,curS.lang)+(cursor?'<span class="cr"></span>':"");
+  $("#pos").textContent=`Ln ${lines.length}, Col ${txt.length+1}`;}
+const MM={c:$("#mmc")};
+function fitMM(){const r=MM.c.getBoundingClientRect(),d=devicePixelRatio||1;MM.c.width=r.width*d;MM.c.height=r.height*d;MM.ctx=MM.c.getContext("2d");MM.ctx.setTransform(d,0,0,d,0,0);MM.w=r.width;MM.h=r.height;}
+function drawMM(){if(!MM.ctx)return;const c=MM.ctx;c.clearRect(0,0,MM.w,MM.h);
+  lines.forEach((t,i)=>{const ind=t.length-t.trimStart().length,cm=/^\s*(#|\/\/|""")/.test(t);c.fillStyle=cm?"rgba(106,153,85,.6)":"rgba(156,220,254,.38)";c.fillRect(5+ind*.9,4+i*3,Math.min(t.trim().length*.9,MM.w-8),2);});
+  c.fillStyle="rgba(121,121,121,.18)";c.fillRect(0,4+ed.scrollTop/19*3,MM.w,ed.clientHeight/19*3);}
+
+/* ---------- terminal ---------- */
+function tl(html){const d=document.createElement("div");d.className="t";d.innerHTML=html;term.appendChild(d);while(term.childElementCount>400)term.firstChild.remove();term.scrollTop=term.scrollHeight;return d;}
+const PROMPT=()=>`<span class="ok">clin@cip-gpu02</span>:<span class="bl">~/cip-clinical-ml</span><span class="wh">(feature/icu-scores)</span>$ `;
+
+/* ---------- generators (yield = delay ms) ---------- */
+function* typeCode(S){openFile(S);yield 600;const src=S.code.split("\n");
+  for(let li=0;li<src.length;li++){const line=src[li];newLine();const ind=line.match(/^\s*/)[0];let cur=ind;setLine(cur,true);yield rnd(40,120);
+    for(let k=ind.length;k<line.length;k++){
+      if(Math.random()<.012&&/[a-z]/.test(line[k])){setLine(cur+String.fromCharCode(97+ri(0,25)),true);yield rnd(90,180);setLine(cur,true);yield rnd(80,150);}
+      cur+=line[k];setLine(cur,true);yield line[k]===" "&&Math.random()<.05?rnd(250,700):rnd(18,65);}
+    setLine(line,false);syncPreview((li+1)/src.length);yield rnd(60,240);if(Math.random()<.05)yield rnd(800,2000);}
+  setLine(lines[lines.length-1],true);$("#wtitle").textContent=`${S.name} — cip-clinical-ml`;const x=document.querySelector(".tab.on .x");if(x)x.textContent="✕";yield 900;}
+function* cmd(t){const d=tl(PROMPT()+"<span></span>");const s=d.lastChild;yield 500;for(let k=1;k<=t.length;k++){s.textContent=t.slice(0,k);yield rnd(25,85);}yield 400;}
+function* out(arr,lo=30,hi=160){for(const a of arr){tl(a);yield rnd(lo,hi);}}
+function* runFor(S){
+  if(S.lang==="py"){yield* cmd(`pytest tests/scores/test_${S.id}.py -q`);
+    yield* out([`<span class="wh">============================= test session starts ==============================</span>`,`platform linux -- Python 3.12.4, pytest-8.3.2, pluggy-1.5.0`,`rootdir: /home/clin/cip-clinical-ml  configfile: pyproject.toml`,`collected ${S.tests.length} items`,""],20,60);
+    S.tests.forEach((t,i)=>{});for(let i=0;i<S.tests.length;i++){const t=S.tests[i];tl(`tests/scores/test_${S.id}.py::${t} <span class="ok">PASSED</span>${" ".repeat(Math.max(1,56-t.length-S.id.length))}<span class="ok">[${String(Math.round(100*(i+1)/S.tests.length)).padStart(3)}%]</span>`);yield rnd(80,320);}
+    tl(`<span class="ok">============================== ${S.tests.length} passed in ${rnd(.3,1.6).toFixed(2)}s ===============================</span>`);yield 600;
+    yield* cmd(`python -m icu_core.scores.${S.id} --demo`);}
+  else{yield* cmd(`cd web && npx vitest run ${S.id} --reporter=verbose`);yield* out([""," <span class='cy'>RUN</span>  v2.1.1 /home/clin/cip-clinical-ml/web",""],30,80);
+    for(const t of S.tests){tl(` <span class="ok">✓</span> src/scores/${S.id}.test.ts > ${t} <span class="dm">${ri(1,6)}ms</span>`);yield rnd(80,250);}
+    yield* out([""," <span class='dm'>Test Files</span>  <span class='ok'>1 passed</span> (1)",`      <span class='dm'>Tests</span>  <span class='ok'>${S.tests.length} passed</span> (${S.tests.length})`],30,80);yield 500;
+    yield* cmd(`npx tsx src/scores/${S.id}.ts --demo && cd ..`);}
+  yield* out(S.demo,200,600);yield 900;}
+function* gitCommit(S){const m=`feat(scores): ${S.id} calculator + reference table`;yield* cmd(`git add ${S.path} docs/scores/${S.id}.md tests/ && git commit -qm "${m}"`);
+  tl(`[feature/icu-scores ${Math.random().toString(16).slice(2,9)}] ${m}`);tl(` 3 files changed, ${S.code.split("\n").length+ri(20,60)} insertions(+), ${ri(0,12)} deletions(-)`);
+  fileRow[S.name].classList.remove("mod");fileRow[S.name].querySelector(".gm").textContent="";yield 800;}
+function* main(start){let i=start;
+  if(start===0){yield* cmd("git pull --rebase");yield* out(["Current branch feature/icu-scores is up to date."]);}
+  while(true){const S=SCORES[((i%SCORES.length)+SCORES.length)%SCORES.length];curIdx=SCORES.indexOf(S);i++;
+    yield* typeCode(S);yield* runFor(S);if(Math.random()<.6)yield* gitCommit(S);yield 1500;}}
+
+let saved=0;try{saved=(+localStorage.getItem("cip.idx")||0)%SCORES.length}catch(e){}
+let curIdx=saved,G=main(saved),boost=0,paused=false,timer=null;
+function tick(){if(paused){timer=setTimeout(tick,200);return;}let d=0,g=0;
+  while(d<=0&&g++<80){d=G.next().value||0;if(boost>0&&d<300){boost--;d=0;}}timer=setTimeout(tick,d);}
+function jump(i){clearTimeout(timer);G=main(((i%SCORES.length)+SCORES.length)%SCORES.length);boost=0;tl("^C");tick();}
+/* ---------- layout: drag split / Ctrl+B sidebar / F4 wide preview ---------- */
+const mainc=$("#mainc"),vsash=$("#vsash"),appEl=$("#app");
+function setLW(px){const w=mainc.clientWidth;px=Math.max(w*.22,Math.min(w*.72,px));mainc.style.setProperty("--lw",px+"px");fitMM();drawMM();return px/w;}
+let lwRatio=null;try{lwRatio=parseFloat(localStorage.getItem("cip.lw"))||null}catch(e){}
+function applyLW(){if(lwRatio)setLW(lwRatio*mainc.clientWidth);else{mainc.style.removeProperty("--lw");fitMM();drawMM();}}
+vsash.addEventListener("mousedown",e=>{e.preventDefault();vsash.classList.add("drag");const x0=mainc.getBoundingClientRect().left;
+  const mv=ev=>{lwRatio=setLW(ev.clientX-x0);};const up=()=>{vsash.classList.remove("drag");document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);try{localStorage.setItem("cip.lw",lwRatio)}catch(e){}};
+  document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);});
+vsash.addEventListener("dblclick",e=>{e.stopPropagation();lwRatio=null;try{localStorage.removeItem("cip.lw")}catch(e){}applyLW();});
+let wide=false;
+function toggleWide(){wide=!wide;if(wide)setLW(mainc.clientWidth*.28);else applyLW();}
+function toggleSidebar(){appEl.classList.toggle("nosb");try{localStorage.setItem("cip.nosb",appEl.classList.contains("nosb")?"1":"0")}catch(e){}requestAnimationFrame(()=>{wide?setLW(mainc.clientWidth*.28):applyLW();});}
+try{if(localStorage.getItem("cip.nosb")==="1")appEl.classList.add("nosb")}catch(e){}
+applyLW();
+/* ---------- review (cloze) mode ---------- */
+let cloze=false;try{cloze=localStorage.getItem("cip.cloze")==="1"}catch(e){}
+function setCloze(v){cloze=v;pv.classList.toggle("cloze",v);$("#revbtn").textContent=v?"◉ Review: on":"◎ Review: off";try{localStorage.setItem("cip.cloze",v?"1":"0")}catch(e){}}
+pv.addEventListener("click",e=>{const td=e.target.closest("td");if(td&&cloze)td.classList.toggle("rev");});
+$("#revbtn").addEventListener("click",()=>setCloze(!cloze));setCloze(cloze);
+/* ---------- quick open (Ctrl+P) ---------- */
+const qo=$("#qo"),qi=$("#qi"),ql=$("#ql");let qsel=0,qitems=[];
+function qoOpen(){qo.style.display="block";qi.value="";qoFilter();qi.focus();}
+function qoClose(){qo.style.display="none";qi.blur();}
+function qoFilter(){const q=qi.value.trim().toLowerCase();qitems=SCORES.map((s,i)=>({s,i})).filter(({s})=>!q||(s.name+" "+s.id+" "+s.title).toLowerCase().includes(q)).slice(0,14);qsel=0;renderQ();}
+function renderQ(){ql.innerHTML=qitems.map((o,k)=>`<div class="it${k===qsel?" on":""}" data-i="${o.i}"><span style="color:${ICON[o.s.lang][1]};font:700 9px Consolas;align-self:center">${ICON[o.s.lang][0]}</span><span>${o.s.name}</span><span class="p">${o.s.title}</span></div>`).join("");}
+qi.addEventListener("input",qoFilter);
+ql.addEventListener("mousedown",e=>{const it=e.target.closest(".it");if(it){e.preventDefault();qoClose();jump(+it.dataset.i);}});
+document.addEventListener("keydown",e=>{
+  if(qo.style.display==="block"){
+    if(e.key==="Escape"){e.preventDefault();qoClose();}
+    else if(e.key==="ArrowDown"){e.preventDefault();qsel=Math.min(qsel+1,qitems.length-1);renderQ();}
+    else if(e.key==="ArrowUp"){e.preventDefault();qsel=Math.max(qsel-1,0);renderQ();}
+    else if(e.key==="Enter"){e.preventDefault();const o=qitems[qsel];qoClose();if(o)jump(o.i);}
+    return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key==="p"||e.key==="P")){e.preventDefault();qoOpen();return;}
+  if(e.key==="F2"){e.preventDefault();setCloze(!cloze);return;}
+  if(e.key==="F4"){e.preventDefault();toggleWide();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key==="b"||e.key==="B")){e.preventDefault();toggleSidebar();return;}
+  if(e.key==="Pause"){paused=!paused;return;}
+  if(e.key==="ArrowRight"){e.preventDefault();jump(curIdx+1);return;}
+  if(e.key==="ArrowLeft"){e.preventDefault();jump(curIdx-1);return;}
+  if(e.key==="ArrowDown"){e.preventDefault();pvManual=true;pv.scrollTop+=60;return;}
+  if(e.key==="ArrowUp"){e.preventDefault();pvManual=true;pv.scrollTop-=60;return;}
+  if(["F11","F12","Escape"].includes(e.key)||e.ctrlKey||e.altKey||e.metaKey)return;
+  e.preventDefault();boost+=ri(3,6);});
+pv.addEventListener("wheel",e=>{pvManual=true;pv.scrollTop+=e.deltaY;},{passive:true});
+document.addEventListener("dblclick",()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{});});
+window.addEventListener("resize",()=>{wide?setLW(mainc.clientWidth*.28):applyLW();});
+fitMM();tick();
+</script>
+</body>
+</html>
